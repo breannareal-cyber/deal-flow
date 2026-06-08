@@ -6,8 +6,26 @@ import { HIDDEN_STAGES } from '@/lib/types';
 import { ListingCard } from './listing-card';
 import { ZoneModal, type ZoneKey } from './zone-modal';
 import { Reveal } from '@/components/nautical/reveal';
+import { PROHIBITED_SECTORS } from '@/lib/scoring/buybox-config';
 
 const ZONE_MAX_3 = 3; // Zone 3 is capped
+const FRESH_MAX = 3; // only ever show the top 3 freshly-hauled candidates
+
+// Freshly-scraped candidates have no score yet, so we gate them on text.
+// HARD EXCLUDE: the shared prohibited list (guns/jewelry/liquor/laundromats) PLUS
+// HVAC — which is a valid scored sector elsewhere, but Breanna doesn't want it
+// cluttering the unscored "Freshly Hauled In" section.
+const HARD_EXCLUDE = [...PROHIBITED_SECTORS, 'hvac', 'heating & cooling', 'furnace'];
+// PREFERRED: bubble these to the top of the freshly-hauled list.
+const PREFERRED = [
+  'water', 'well', 'environmental', 'remediation', 'wastewater',
+  'stormwater', 'septic', 'testing', 'treatment', 'utility',
+];
+
+const matchesTerms = (l: ScoredListing, terms: string[]) => {
+  const hay = `${l.title} ${l.sector ?? ''} ${l.description ?? ''}`.toLowerCase();
+  return terms.some((t) => hay.includes(t));
+};
 
 function ZoneHeader({
   label,
@@ -67,7 +85,11 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
   const zone1 = visible.filter((l) => l.score?.zone === 'CRITERIA_MATCH');
   const zone2 = visible.filter((l) => l.score?.zone === 'WATER_OUTSIDE_SPEND');
   const zone3 = visible.filter((l) => l.score?.zone === 'SPEND_OUTSIDE_WATER').slice(0, ZONE_MAX_3);
-  const unscored = visible.filter((l) => !l.score);
+  const unscored = visible
+    .filter((l) => !l.score)
+    .filter((l) => !matchesTerms(l, HARD_EXCLUDE)) // hard rule: no guns/jewelry/liquor/HVAC/laundromats
+    .sort((a, b) => Number(matchesTerms(b, PREFERRED)) - Number(matchesTerms(a, PREFERRED))) // water/environmental first
+    .slice(0, FRESH_MAX);
 
   const cards = (items: ScoredListing[]) => (
     <div className="flex flex-col gap-3">

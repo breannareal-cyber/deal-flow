@@ -9,7 +9,7 @@
 // runs with zero credentials and is fully unit-testable.
 
 import type { Listing, Score, OffMarketScore, DealKiller } from '@/lib/types';
-import { DEAL_KILLER_GATES, OFFMARKET_WEIGHTS, type OffMarketWeights } from './buybox-config';
+import { DEAL_KILLER_GATES, OFFMARKET_WEIGHTS, isProhibited, type OffMarketWeights } from './buybox-config';
 
 const BULLSEYE = [
   'well', 'pump', 'water', 'septic', 'wastewater', 'sewer', 'drilling',
@@ -98,6 +98,20 @@ export function scoreOffMarket(
   nowYear: number = new Date().getFullYear(),
   weights: OffMarketWeights = OFFMARKET_WEIGHTS
 ): Score {
+  // Hard rule: prohibited categories (guns/jewelry/liquor/laundromats) are never
+  // surfaced, regardless of any other signal.
+  if (isProhibited(listing.title, listing.sector, listing.description)) {
+    return {
+      verdict: 'PASS',
+      zone: 'EXCLUDE',
+      summary: `Off-thesis category — hard-excluded by buy-box rule.`,
+      dealKillers: [],
+      fitFactors: [],
+      topQuestions: [],
+      scoreReasoning: 'Matched a prohibited sector (firearms, jewelry/pawn, liquor, or laundromat) — excluded before scoring.',
+    };
+  }
+
   const longevity = longevityScore(listing, nowYear);
   const modernizationHeadroom = modernizationScore(listing, nowYear);
   const sectorFit = sectorFitScore(listing);
