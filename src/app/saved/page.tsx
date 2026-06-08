@@ -12,9 +12,9 @@ export default function SavedPage() {
         <Cloud className="pointer-events-none absolute top-24 right-[20%] w-16 drift hidden sm:block" style={{ animationDelay: '-12s' }} />
 
         <div className="relative max-w-3xl mx-auto px-6 sm:px-10 pt-6 pb-16">
-          <p className="eyebrow text-[11px] mb-3" style={{ color: '#45525a' }}>The Hold</p>
+          <p className="eyebrow text-[11px] mb-3" style={{ color: '#2f3b41' }}>The Hold</p>
           <h1 className="display text-[clamp(2.5rem,6vw,4rem)]" style={{ color: '#0e1011' }}>Saved Deals</h1>
-          <p className="text-[0.95rem] mt-4 max-w-md leading-relaxed" style={{ color: '#45525a' }}>
+          <p className="text-[0.95rem] mt-4 max-w-md leading-relaxed" style={{ color: '#2f3b41' }}>
             The catches you&rsquo;re tracking. Haul a deal in from the feed and it drops into the hold.
           </p>
         </div>

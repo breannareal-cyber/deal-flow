@@ -74,16 +74,6 @@ export function Cloud(props: Illo) {
   );
 }
 
-/* ── Seagull silhouette (woodcut) ── */
-export function Seagull(props: Illo) {
-  return (
-    <svg viewBox="0 0 140 90" {...base(props)}>
-      <path fill={INK} d="M70 46 C56 24 36 16 12 14 C34 22 44 36 50 50 C40 46 30 48 24 56 C40 52 56 56 70 50 C84 56 100 52 116 56 C110 48 100 46 90 50 C96 36 106 22 128 14 C104 16 84 24 70 46 Z" />
-      <path fill={INK} d="M70 46 C68 54 70 64 74 70 C70 64 66 54 70 46 Z" />
-    </svg>
-  );
-}
-
 /* ── Cape Hatteras (OBX) lighthouse — black/cream diagonal stripes ── */
 export function Lighthouse(props: Illo) {
   return (
@@ -108,50 +98,6 @@ export function Lighthouse(props: Illo) {
       </g>
       {/* rocks */}
       <path fill={INK} d="M14 184 C30 174 60 174 80 184 C84 187 84 192 80 192 H18 C12 192 10 187 14 184 Z" />
-    </svg>
-  );
-}
-
-/* ── Kayaker silhouette ── */
-export function Kayaker(props: Illo) {
-  return (
-    <svg viewBox="0 0 150 130" {...base(props)}>
-      <g fill={INK}>
-        {/* paddle */}
-        <path d="M16 24 C20 18 30 18 34 26 L70 92 C73 98 68 104 62 100 L24 34 C20 28 14 30 16 24 Z" />
-        <path d="M10 18 C8 10 22 8 26 16 C28 22 18 30 10 18 Z" />
-        {/* body */}
-        <path d="M66 56 C60 42 78 30 90 38 C100 44 98 58 88 62 C100 66 106 82 96 92 L66 100 C56 92 58 70 66 56 Z" />
-        {/* kayak */}
-        <path d="M40 104 C70 96 120 96 146 106 C120 116 70 116 40 108 C36 107 36 105 40 104 Z" />
-      </g>
-      <circle cx="86" cy="44" r="6" fill={PAPER} />
-    </svg>
-  );
-}
-
-/* ── Shark-suit SUP paddler (the Epicurrence character) ── */
-export function SharkPaddler(props: Illo) {
-  return (
-    <svg viewBox="0 0 110 200" {...base(props)}>
-      <g fill={INK}>
-        {/* shark hood + body */}
-        <path d="M48 18 C30 22 26 48 40 60 C34 92 38 132 46 150 L70 150 C78 130 80 92 74 60 C92 46 84 18 62 16 C66 26 64 36 56 38 C48 40 44 30 48 18 Z" />
-        {/* dorsal fin */}
-        <path d="M55 14 C58 4 70 6 70 16 C70 22 60 22 55 14 Z" />
-        {/* legs */}
-        <path d="M48 150 L44 192 L52 192 L57 156 Z" />
-        <path d="M64 150 L70 192 L78 192 L72 156 Z" />
-        {/* paddle */}
-        <path d="M90 30 C94 24 102 28 100 36 L92 168 C90 176 82 174 84 166 Z" />
-      </g>
-      {/* shark mouth */}
-      <path fill={PAPER} d="M44 44 C52 50 62 50 70 44 C64 56 50 56 44 44 Z" />
-      <g fill={INK}>
-        <path d="M46 46 L48 52 L50 46 M52 47 L54 53 L56 47 M58 47 L60 53 L62 47 M64 46 L66 52 L68 46" />
-      </g>
-      <circle cx="50" cy="34" r="3" fill={PAPER} />
-      <circle cx="64" cy="34" r="3" fill={PAPER} />
     </svg>
   );
 }
