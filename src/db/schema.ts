@@ -1,0 +1,79 @@
+import {
+  pgTable,
+  pgEnum,
+  text,
+  integer,
+  timestamp,
+  jsonb,
+  unique,
+} from 'drizzle-orm/pg-core';
+import type { Listing, Score, Research } from '@/lib/types';
+
+// Document-oriented schema. The app's domain types (Listing/Score/Research) are
+// the source of truth — richer than any column set we'd hand-maintain — so each
+// full object is stored as a jsonb `data` column. Only fields we QUERY, SORT, or
+// CONSTRAIN are promoted to real columns:
+//   - id: the app's own text id (`${source}-${externalId}`), NOT a random uuid —
+//     the pipeline and UI route on this exact id.
+//   - pipelineStatus / duplicateOf / retryCount / userAction: MUTATED after scrape,
+//     so they live in columns and the read mapper overlays them over the jsonb
+//     snapshot (which may be stale).
+//   - scrapedAt: feed sort key.
+// This mirrors the JSON store's whole-object semantics and needs no migration when
+// the types evolve.
+
+export const pipelineStatusEnum = pgEnum('pipeline_status', [
+  'scraped',
+  'scored',
+  'researched',
+  'failed',
+]);
+
+export const verdictEnum = pgEnum('verdict_type', [
+  'PURSUE',
+  'DIG_DEEPER',
+  'PASS',
+  'EDGE_CASE',
+]);
+
+export const researchDepthEnum = pgEnum('research_depth', ['medium', 'deep']);
+
+export const userActionEnum = pgEnum('user_action_type', [
+  'pass',
+  'save',
+  'pursue',
+]);
+
+export const listings = pgTable('listings', {
+  id: text('id').primaryKey(), // = `${source}-${externalId}`
+  source: text('source').notNull(),
+  externalId: text('external_id').notNull(),
+  pipelineStatus: pipelineStatusEnum('pipeline_status').notNull().default('scraped'),
+  scrapedAt: timestamp('scraped_at').notNull().defaultNow(),
+  duplicateOf: text('duplicate_of'), // self-ref to listings.id; loose (no FK), matches JSON store
+  retryCount: integer('retry_count').notNull().default(0),
+  userAction: userActionEnum('user_action'), // null until the user acts
+  data: jsonb('data').$type<Listing>().notNull(),
+}, (t) => [
+  unique().on(t.source, t.externalId),
+]);
+
+export const scores = pgTable('scores', {
+  listingId: text('listing_id')
+    .primaryKey()
+    .references(() => listings.id, { onDelete: 'cascade' }),
+  verdict: verdictEnum('verdict').notNull(),
+  data: jsonb('data').$type<Score>().notNull(),
+  scoredAt: timestamp('scored_at').notNull().defaultNow(),
+});
+
+export const research = pgTable('research', {
+  listingId: text('listing_id')
+    .notNull()
+    .references(() => listings.id, { onDelete: 'cascade' }),
+  depth: researchDepthEnum('depth').notNull(),
+  data: jsonb('data').$type<Research>().notNull(),
+  researchedAt: timestamp('researched_at').notNull().defaultNow(),
+}, (t) => [
+  unique().on(t.listingId, t.depth),
+]);
