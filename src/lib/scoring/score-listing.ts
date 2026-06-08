@@ -4,7 +4,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '@/lib/config';
 import type { Listing, Score, Verdict } from '@/lib/types';
-import { BUY_BOX, BUY_BOX_VERSION } from './buybox-config';
+import { BUY_BOX, BUY_BOX_VERSION, isProhibited } from './buybox-config';
 
 const SYSTEM_PROMPT = `You are a skeptical ETA (entrepreneurship-through-acquisition) deal screener for Breanna, a first-time searcher buying a water/environmental services business.
 
@@ -77,6 +77,21 @@ const VALID_VERDICTS: Verdict[] = ['PURSUE', 'DIG_DEEPER', 'PASS', 'EDGE_CASE'];
 const VALID_ZONES = ['CRITERIA_MATCH', 'WATER_OUTSIDE_SPEND', 'SPEND_OUTSIDE_WATER', 'EXCLUDE'] as const;
 
 export async function scoreListing(listing: Listing): Promise<Score> {
+  // Hard rule first: prohibited categories never reach the model — guns/jewelry/
+  // liquor/laundromats are excluded outright, regardless of financials. Checked
+  // before the API key so a prohibited listing costs nothing and needs no key.
+  if (isProhibited(listing.title, listing.sector, listing.description)) {
+    return {
+      verdict: 'PASS',
+      zone: 'EXCLUDE',
+      summary: 'Off-thesis category — hard-excluded by buy-box rule.',
+      dealKillers: [],
+      fitFactors: [],
+      topQuestions: [],
+      scoreReasoning: 'Matched a prohibited sector (firearms, jewelry/pawn, liquor, or laundromat) — excluded before scoring.',
+    };
+  }
+
   if (!config.anthropic.apiKey) throw new Error('ANTHROPIC_API_KEY not set — cannot score');
 
   const client = new Anthropic({ apiKey: config.anthropic.apiKey });
