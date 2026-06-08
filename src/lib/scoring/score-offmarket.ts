@@ -14,6 +14,7 @@ import { DEAL_KILLER_GATES, OFFMARKET_WEIGHTS, type OffMarketWeights } from './b
 const BULLSEYE = [
   'well', 'pump', 'water', 'septic', 'wastewater', 'sewer', 'drilling',
   'treatment', 'filtration', 'groundwater', 'environmental',
+  'testing', 'quality', 'lab', 'monitoring', 'analysis',
 ];
 const ADJACENT = ['hvac', 'utility', 'plumbing', 'irrigation'];
 

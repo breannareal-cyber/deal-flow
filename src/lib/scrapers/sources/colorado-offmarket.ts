@@ -29,6 +29,11 @@ const WATER_PHRASES = [
   'water treatment', 'water system', 'water well', 'well drilling', 'well service',
   'water filtration', 'water softening', 'water conditioning', 'water purification',
   'ground water', 'pump service',
+  // Water quality / testing / environmental — the bullseye sector, previously absent.
+  'water quality', 'water testing', 'water analysis', 'water lab', 'water monitoring',
+  'environmental service', 'environmental testing', 'water resource', 'water works',
+  // Utility-side water service (private operators; co-ops still blocked by NEGATIVE).
+  'water utility', 'utility service',
 ];
 // Negative terms: co-ops, government, and false-positive substrings. Belt-and-suspenders
 // alongside the phrase strategy above.
@@ -66,6 +71,20 @@ function isWaterBusiness(name: string): boolean {
   );
 }
 
+// Coarse sector bucket from the entity name — used only to keep a single batch from
+// being monopolized by one sub-sector. Drilling outfits are the oldest water
+// businesses in CO, so a pure oldest-first batch is otherwise all drilling.
+export function offMarketSector(name: string): string {
+  const u = name.toUpperCase();
+  if (/\bDRILL/.test(u)) return 'drilling';
+  if (/QUALITY|TESTING|ANALYSIS|MONITOR|ENVIRONMENT|\bLAB\b/.test(u)) return 'quality-env';
+  if (/UTILITY|WATER SYSTEM|WATER WORKS|RESOURCE|TREATMENT|FILTRATION|CONDITION|SOFTEN|PURIF/.test(u)) return 'treatment-utility';
+  if (/SEPTIC|SEWER|WASTEWATER|SANITARY/.test(u)) return 'septic-sewer';
+  if (/\bPUMP/.test(u)) return 'pump';
+  if (/\bWELLS?\b/.test(u)) return 'well';
+  return 'other';
+}
+
 export type FetchOpts = {
   limit: number;
   existingIds: Set<string>;
@@ -78,9 +97,11 @@ export type FetchOpts = {
 export async function fetchOffMarketCandidates(opts: FetchOpts): Promise<Listing[]> {
   const fetchFn = opts.fetchFn ?? fetch;
   const where = buildEntitiesQuery();
-  const out: Listing[] = [];
+  // Gather an eligible pool (oldest-first) across pages, then diversify by sub-sector
+  // before truncating to the batch limit — so one sector can't monopolize a run.
+  const pool: Listing[] = [];
 
-  for (let page = 0; page < MAX_PAGES && out.length < opts.limit; page++) {
+  for (let page = 0; page < MAX_PAGES; page++) {
     const url =
       `${ENTITIES_URL}?$where=${encodeURIComponent(where)}` +
       `&$order=entityformdate%20asc&$limit=${PAGE_SIZE}&$offset=${page * PAGE_SIZE}`;
@@ -105,18 +126,38 @@ export async function fetchOffMarketCandidates(opts: FetchOpts): Promise<Listing
 
     let kept = 0;
     for (const row of rows) {
-      if (out.length >= opts.limit) break;
       const name = String(row.entityname ?? '');
       if (!isWaterBusiness(name)) continue;
       const listing = normalizeOffMarket(row);
       if (!listing || opts.existingIds.has(listing.id)) continue;
       // Defense-in-depth: skip pre-floor entities even if the SQL filter is bypassed.
       if (listing.yearEstablished !== null && listing.yearEstablished < MIN_FOUNDED_YEAR) continue;
-      out.push(listing);
+      pool.push(listing);
       kept++;
     }
-    console.log(`[co-offmarket] page ${page}: ${rows.length} rows, ${kept} new water businesses kept (total ${out.length}/${opts.limit})`);
+    console.log(`[co-offmarket] page ${page}: ${rows.length} rows, ${kept} new water businesses pooled (pool ${pool.length})`);
+    // Page until the pool is deep enough to diversify a full batch from.
+    if (pool.length >= opts.limit * 6) break;
   }
 
+  // Diversity pass: cap any one sub-sector so drilling can't fill the batch.
+  const perSectorCap = Math.max(1, Math.ceil(opts.limit / 4));
+  const counts: Record<string, number> = {};
+  const out: Listing[] = [];
+  for (const listing of pool) {
+    if (out.length >= opts.limit) break;
+    const sector = offMarketSector(listing.title);
+    if ((counts[sector] ?? 0) >= perSectorCap) continue;
+    counts[sector] = (counts[sector] ?? 0) + 1;
+    out.push(listing);
+  }
+  // Backfill (rare): if diversity left the batch short, top up oldest-first.
+  if (out.length < opts.limit) {
+    for (const listing of pool) {
+      if (out.length >= opts.limit) break;
+      if (!out.includes(listing)) out.push(listing);
+    }
+  }
+  console.log(`[co-offmarket] selected ${out.length}/${opts.limit} across sectors ${JSON.stringify(counts)}`);
   return out;
 }
