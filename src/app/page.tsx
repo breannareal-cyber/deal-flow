@@ -38,11 +38,11 @@ export default async function FeedPage() {
 
         <div className="relative max-w-5xl mx-auto px-6 sm:px-10 pt-8 pb-4 grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
           <div>
-            <p className="eyebrow text-[11px] mb-4" style={{ color: '#45525a' }}>{TODAY}</p>
+            <p className="eyebrow text-[11px] mb-4" style={{ color: '#2f3b41' }}>{TODAY}</p>
             <h1 className="display text-[clamp(2.75rem,7vw,4.75rem)]" style={{ color: '#0e1011' }}>
               Today&rsquo;s<br />Pipeline
             </h1>
-            <p className="mt-5 text-[0.95rem] leading-relaxed max-w-md" style={{ color: '#45525a' }}>
+            <p className="mt-5 text-[0.95rem] leading-relaxed max-w-md" style={{ color: '#2f3b41' }}>
               Charting the waters for businesses worth acquiring. Every catch scored against the buy box,
               sorted by how close it swims to the bullseye.
             </p>

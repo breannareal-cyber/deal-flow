@@ -59,10 +59,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         <div className="relative max-w-3xl mx-auto px-6 sm:px-10 pt-6 pb-16">
           <div className="flex items-center justify-between mb-4">
             <VerdictBadge verdict={verdict} />
-            <span className="figure text-xs" style={{ color: '#45525a' }}>{listing.location ?? '—'}</span>
+            <span className="figure text-xs" style={{ color: '#2f3b41' }}>{listing.location ?? '—'}</span>
           </div>
           <h1 className="display text-[clamp(2rem,5vw,3.5rem)] max-w-2xl" style={{ color: '#0e1011' }}>{listing.title}</h1>
-          <p className="text-sm mt-3" style={{ color: '#45525a' }}>{listing.sector ?? '—'}</p>
+          <p className="text-sm mt-3" style={{ color: '#2f3b41' }}>{listing.sector ?? '—'}</p>
           {score?.missedDimension && (
             <p className="text-xs mt-2 italic" style={{ color: '#3d5560' }}>↳ {score.missedDimension}</p>
           )}
@@ -73,7 +73,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
               { label: 'Est. Age', value: listingAge(listing.yearEstablished) },
             ].map(({ label, value }) => (
               <div key={label}>
-                <p className="eyebrow text-[10px] mb-1.5" style={{ color: '#45525a' }}>{label}</p>
+                <p className="eyebrow text-[10px] mb-1.5" style={{ color: '#2f3b41' }}>{label}</p>
                 <p className="figure text-xl sm:text-3xl" style={{ color: '#0e1011' }}>{value}</p>
               </div>
             ))}
