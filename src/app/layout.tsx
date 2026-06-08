@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Archivo, Inter, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -6,10 +6,17 @@ const archivo = Archivo({ variable: '--font-archivo', subsets: ['latin'], weight
 const inter = Inter({ variable: '--font-inter', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
+const DESCRIPTION = 'Charting the waters for businesses worth acquiring.';
+
 export const metadata: Metadata = {
   title: 'DealFlow©',
-  description: 'Charting the waters for businesses worth acquiring.',
+  description: DESCRIPTION,
+  applicationName: 'DealFlow',
+  openGraph: { title: 'DealFlow©', description: DESCRIPTION, type: 'website' },
+  twitter: { card: 'summary_large_image', title: 'DealFlow©', description: DESCRIPTION },
 };
+
+export const viewport: Viewport = { themeColor: '#8a9ba3' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

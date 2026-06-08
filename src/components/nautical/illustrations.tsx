@@ -15,70 +15,49 @@ const base = (p: Illo) => ({ fill: 'none', xmlns: 'http://www.w3.org/2000/svg', 
    MEDALLION — the hero centerpiece. An octopus curling around a porthole
    scene of a rising sun + cresting wave, coral hand-wordmark arched below.
    ──────────────────────────────────────────────────────────────────────── */
-export function Medallion({ label = 'DEALFLOW', sub = 'OBX', ...props }: Illo & { label?: string; sub?: string }) {
+export function Medallion({ label = 'DEALFLOW', ...props }: Illo & { label?: string }) {
   return (
-    <svg viewBox="0 0 280 320" {...base(props)}>
+    <svg viewBox="0 0 260 268" {...base(props)}>
       <defs>
         <clipPath id="porthole">
-          <circle cx="140" cy="138" r="92" />
+          <circle cx="130" cy="128" r="92" />
         </clipPath>
-        <path id="arc" d="M 64 150 A 76 76 0 0 0 216 150" fill="none" />
+        {/* arc sitting in the lower (ink) half, text rides above it */}
+        <path id="arc" d="M 58 150 A 72 72 0 0 0 202 150" fill="none" />
       </defs>
 
-      {/* curling tentacles emerging from behind the disc */}
+      {/* one tasteful tentacle draping over the top-right of the ring */}
       <g fill={INK}>
-        {/* top-right, curling over the ring */}
-        <path d="M196 70 C236 58 252 96 236 122 C228 136 214 138 210 128 C224 126 230 108 218 100 C206 92 192 104 196 118 C188 104 184 80 196 70 Z" />
-        {/* bottom-left, hugging the disc edge then hooking out */}
-        <path d="M92 206 C70 214 52 234 56 258 C58 274 78 280 86 268 C76 266 68 256 72 244 C77 230 96 226 104 216 C100 210 96 206 92 206 Z" />
-        {/* bottom-right, hugging the disc edge then hooking out */}
-        <path d="M190 208 C214 216 234 234 230 258 C228 274 208 280 200 268 C210 266 218 256 214 244 C209 230 190 226 182 216 C186 210 186 208 190 208 Z" />
+        <path d="M188 58 C224 42 250 70 246 100 C243 122 224 130 216 118 C230 114 236 94 224 86 C212 78 198 90 204 106 C192 92 178 72 188 58 Z" />
       </g>
-      {/* sucker dots along the tentacles */}
       <g fill={PAPER}>
-        <circle cx="70" cy="250" r="2.2" /><circle cx="62" cy="236" r="1.8" />
-        <circle cx="216" cy="250" r="2.2" /><circle cx="224" cy="236" r="1.8" />
-        <circle cx="228" cy="98" r="2" /><circle cx="220" cy="112" r="1.8" />
+        <circle cx="232" cy="92" r="2" /><circle cx="222" cy="106" r="1.7" /><circle cx="214" cy="74" r="1.7" />
       </g>
 
       {/* porthole scene */}
       <g clipPath="url(#porthole)">
-        <rect x="44" y="40" width="192" height="200" fill={WASH} />
+        <rect x="38" y="32" width="184" height="200" fill={WASH} />
         {/* sea */}
-        <rect x="44" y="140" width="192" height="100" fill={INK} />
+        <rect x="38" y="128" width="184" height="104" fill={INK} />
         {/* rising sun + rays */}
-        <circle cx="140" cy="104" r="22" fill={PAPER} />
+        <circle cx="130" cy="94" r="22" fill={PAPER} />
         <g stroke={INK} strokeWidth="3" strokeLinecap="round">
-          <path d="M140 60 V74 M140 134 V148 M96 104 H110 M170 104 H184 M110 74 L120 84 M170 74 L160 84 M110 134 L120 124 M170 134 L160 124" />
+          <path d="M130 52 V64 M130 124 V136 M86 94 H98 M162 94 H174 M100 64 L109 73 M160 64 L151 73 M100 124 L109 115 M160 124 L151 115" />
         </g>
-        {/* horizon glints */}
-        <g stroke={INK} strokeWidth="2.5" strokeLinecap="round" opacity="0.5">
-          <path d="M70 128 H120 M150 128 H210 M84 136 H132 M158 136 H196" />
-        </g>
-        {/* cresting wave — ink mass with paper foam curls */}
-        <path d="M44 240 V176 C72 170 92 196 116 190 C150 182 150 150 188 158 C214 163 224 184 236 178 V240 Z" fill={INK} />
-        <g fill={PAPER}>
-          <path d="M150 168 C156 158 172 156 180 162 C172 160 162 162 158 170 C166 166 176 168 180 174 C170 170 158 172 152 180 C156 172 152 168 150 168 Z" />
-          <circle cx="120" cy="190" r="3" />
-          <circle cx="98" cy="196" r="2.5" />
-          <circle cx="170" cy="182" r="2.5" />
-        </g>
-        {/* foam streaks */}
-        <g stroke={PAPER} strokeWidth="2" strokeLinecap="round" opacity="0.85">
-          <path d="M60 210 C90 202 110 214 140 208 C170 202 196 214 224 206" />
-          <path d="M64 224 C96 218 116 228 146 222 C176 216 200 226 226 220" opacity="0.6" />
+        {/* calm horizon reflections in the sea */}
+        <g stroke={PAPER} strokeWidth="2" strokeLinecap="round" opacity="0.45">
+          <path d="M70 144 H110 M150 144 H190 M84 156 H124 M150 156 H184" />
         </g>
       </g>
 
-      {/* heavy ink ring */}
-      <circle cx="140" cy="138" r="92" fill="none" stroke={INK} strokeWidth="10" />
-      <circle cx="140" cy="138" r="99" fill="none" stroke={INK} strokeWidth="2" opacity="0.6" />
+      {/* ring */}
+      <circle cx="130" cy="128" r="92" fill="none" stroke={INK} strokeWidth="9" />
+      <circle cx="130" cy="128" r="99" fill="none" stroke={INK} strokeWidth="1.5" opacity="0.55" />
 
       {/* coral arched wordmark */}
-      <text fill={CORAL} fontFamily="var(--font-archivo), sans-serif" fontWeight={900} letterSpacing="2">
-        <textPath href="#arc" startOffset="50%" textAnchor="middle" style={{ fontSize: 34 }}>{label}</textPath>
+      <text fill={CORAL} fontFamily="var(--font-archivo), sans-serif" fontWeight={800} letterSpacing="0.5">
+        <textPath href="#arc" startOffset="50%" textAnchor="middle" style={{ fontSize: 30 }}>{label}</textPath>
       </text>
-      <text x="140" y="206" fill={CORAL} textAnchor="middle" fontFamily="var(--font-archivo), sans-serif" fontWeight={700} fontSize="15" letterSpacing="6">{sub}</text>
     </svg>
   );
 }
@@ -245,16 +224,26 @@ export function MapX(props: Illo) {
 export function TreasureChest(props: Illo) {
   return (
     <svg viewBox="0 0 120 96" {...base(props)}>
+      {/* chest body + domed lid */}
       <g fill={INK}>
         <path d="M14 44 H106 V86 H14 Z" />
-        <path d="M14 44 C14 20 106 20 106 44 Z" />
+        <path d="M14 44 C14 19 106 19 106 44 Z" />
       </g>
-      <rect x="14" y="54" width="92" height="5" fill={PAPER} />
-      <g fill={PAPER}>
-        <path d="M30 30 V44 H26 V31 Z M46 26 V44 H42 V26 Z M74 26 V44 H70 V26 Z M90 30 V44 H86 V31 Z" opacity="0.5" />
+      {/* lid / body seam */}
+      <rect x="14" y="50" width="92" height="4" fill={PAPER} />
+      {/* iron banding straps */}
+      <g fill={PAPER} opacity="0.85">
+        <rect x="28" y="29" width="4" height="57" />
+        <rect x="88" y="29" width="4" height="57" />
       </g>
-      <rect x="52" y="50" width="16" height="18" rx="2" fill={CORAL} />
-      <circle cx="60" cy="58" r="2.4" fill={INK} />
+      {/* plank seams on the body */}
+      <g stroke={PAPER} strokeWidth="1.2" opacity="0.3">
+        <path d="M14 67 H106 M14 78 H106" />
+      </g>
+      {/* lock plate + keyhole (the one coral mark) */}
+      <rect x="52" y="49" width="16" height="17" rx="2" fill={CORAL} />
+      <circle cx="60" cy="55" r="2.2" fill={INK} />
+      <path d="M60 56 L58 61 H62 Z" fill={INK} />
     </svg>
   );
 }

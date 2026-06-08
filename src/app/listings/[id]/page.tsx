@@ -8,7 +8,7 @@ import type { ScoredListing } from '@/lib/types';
 import { VerdictBadge } from '@/components/feed/verdict-badge';
 import { SiteNav, SiteFooter, NavBack } from '@/components/nautical/site-chrome';
 import { Reveal } from '@/components/nautical/reveal';
-import { Lighthouse, Cloud, Seagull, Waterline } from '@/components/nautical/illustrations';
+import { Lighthouse, Cloud, Waterline } from '@/components/nautical/illustrations';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +54,6 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         <SiteNav right={<NavBack href="/" label="← Feed" />} />
         <Cloud className="pointer-events-none absolute top-16 left-[12%] w-24 drift" />
         <Cloud className="pointer-events-none absolute top-24 right-[30%] w-16 drift hidden sm:block" style={{ animationDelay: '-11s' }} />
-        <Seagull className="pointer-events-none absolute top-20 right-[14%] w-16 soar hidden sm:block" />
         <Lighthouse className="pointer-events-none absolute bottom-0 right-[5%] w-16 sm:w-20" />
 
         <div className="relative max-w-3xl mx-auto px-6 sm:px-10 pt-6 pb-16">
