@@ -36,6 +36,24 @@ export const DEAL_KILLER_GATES = [
 
 export const BUY_BOX_VERSION = 1;
 
+// HARD EXCLUDE — categories that must NEVER surface anywhere (feed or scorer),
+// no matter how the other signals look. Breanna's standing rule. Matched as
+// substrings against title + sector + description (case-insensitive).
+// NOTE: HVAC is deliberately NOT here — it's an adjacent buy-box sector and can
+// legitimately score into "In Spend · Outside Water". HVAC is filtered only out
+// of the "Freshly Hauled In" section (see feed-client).
+export const PROHIBITED_SECTORS = [
+  'gun', 'firearm', 'ammo', 'ammunition', 'shooting range', 'tactical',
+  'jewel', 'jewelry', 'jeweler', 'pawn', 'watch repair', 'gold buyer',
+  'liquor', 'wine & spirits', 'spirits', 'package store',
+  'laundr', 'laundromat', 'dry clean', 'wash & fold',
+];
+
+export function isProhibited(...text: (string | null | undefined)[]): boolean {
+  const hay = text.filter(Boolean).join(' ').toLowerCase();
+  return PROHIBITED_SECTORS.some((t) => hay.includes(t));
+}
+
 // Off-market scoring weights — the lever for retuning the thesis as Breanna learns
 // the market. Each dimension is scored 0–5 (see scoring/score-offmarket.ts); the
 // weighted average is the fit score. Edit these numbers, not the scorer.
