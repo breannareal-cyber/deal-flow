@@ -94,7 +94,7 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
           <button
             key={f.key}
             onClick={() => setTypeFilter(f.key)}
-            className="eyebrow text-[10px] px-3 py-1 transition-colors"
+            className="eyebrow text-[10px] px-3 py-1.5 transition-colors"
             style={
               typeFilter === f.key
                 ? { backgroundColor: '#df7d62', color: '#0e1011' }

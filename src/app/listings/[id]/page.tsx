@@ -74,7 +74,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             ].map(({ label, value }) => (
               <div key={label}>
                 <p className="eyebrow text-[10px] mb-1.5" style={{ color: '#45525a' }}>{label}</p>
-                <p className="figure text-2xl sm:text-3xl" style={{ color: '#0e1011' }}>{value}</p>
+                <p className="figure text-xl sm:text-3xl" style={{ color: '#0e1011' }}>{value}</p>
               </div>
             ))}
           </div>
