@@ -11,10 +11,10 @@ import { PROHIBITED_SECTORS } from '@/lib/scoring/buybox-config';
 const ZONE_MAX_3 = 3; // Zone 3 is capped
 const FRESH_MAX = 3; // only ever show the top 3 freshly-hauled candidates
 
-// Freshly-scraped candidates have no score yet, so we gate them on text.
-// HARD EXCLUDE: the shared prohibited list (guns/jewelry/liquor/laundromats) PLUS
-// HVAC — which is a valid scored sector elsewhere, but Breanna doesn't want it
-// cluttering the unscored "Freshly Hauled In" section.
+// Freshly-scraped candidates have no score yet, so we gate them on text. This is
+// the canonical prohibited list PLUS HVAC: HVAC is a legitimate *adjacent* sector
+// that can score into "In Spend · Outside Water", so it is NOT globally prohibited —
+// it's only suppressed from this unscored section to keep the bullseye prominent.
 const HARD_EXCLUDE = [...PROHIBITED_SECTORS, 'hvac', 'heating & cooling', 'furnace'];
 // PREFERRED: bubble these to the top of the freshly-hauled list.
 const PREFERRED = [
