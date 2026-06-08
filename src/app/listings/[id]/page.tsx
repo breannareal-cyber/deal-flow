@@ -5,11 +5,14 @@ import { getStorage } from '@/lib/storage';
 import { formatCurrency, listingAge } from '@/lib/types';
 import type { ScoredListing } from '@/lib/types';
 import { VerdictBadge } from '@/components/feed/verdict-badge';
+import { SiteNav, SiteFooter, NavBack } from '@/components/nautical/site-chrome';
+import { Reveal } from '@/components/nautical/reveal';
+import { Lighthouse, Cloud, Seagull, Waterline } from '@/components/nautical/illustrations';
 
 export const dynamic = 'force-dynamic';
 
 const PURSUE_CHECKLIST = [
-  'Order Quality of Earnings report ($15–30K — not optional)',
+  'Order Quality of Earnings report ($15–30K, not optional)',
   'SBA pre-qualification with lender before LOI',
   'Working capital analysis (AR cycle, payroll float, seasonal swings)',
   'License & permit transfer check (CDPHE certs, contractor licenses)',
@@ -29,6 +32,11 @@ async function getListing(id: string): Promise<ScoredListing | null> {
   return null;
 }
 
+const SectionLabel = ({ children, accent = '#8b949b' }: { children: React.ReactNode; accent?: string }) => (
+  <p className="eyebrow text-[11px] mb-4" style={{ color: accent }}>{children}</p>
+);
+const card = { backgroundColor: '#1c2024', border: '1px solid #2b3137' };
+
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const listing = await getListing(id);
@@ -39,129 +47,150 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const verdict = score?.verdict ?? 'DIG_DEEPER';
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0f0f0f' }}>
-      <nav className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: '#1e1e1e' }}>
-        <Link href="/" className="text-sm font-black tracking-widest uppercase text-white hover:opacity-70 transition-opacity">DEALFLOW©</Link>
-        <Link href="/" className="text-xs font-semibold tracking-widest uppercase transition-colors hover:text-white" style={{ color: '#555' }}>← Back</Link>
-      </nav>
+    <div className="min-h-screen">
+      {/* ════ Poster header (sky) ════ */}
+      <header className="relative overflow-hidden">
+        <SiteNav right={<NavBack href="/" label="← Feed" />} />
+        <Cloud className="pointer-events-none absolute top-16 left-[12%] w-24 drift" />
+        <Cloud className="pointer-events-none absolute top-24 right-[30%] w-16 drift hidden sm:block" style={{ animationDelay: '-11s' }} />
+        <Seagull className="pointer-events-none absolute top-20 right-[14%] w-16 soar hidden sm:block" />
+        <Lighthouse className="pointer-events-none absolute bottom-0 right-[5%] w-16 sm:w-20" />
 
-      <main className="max-w-2xl mx-auto px-6 py-10">
-        <header className="mb-10">
-          <div className="flex items-center justify-between mb-3">
+        <div className="relative max-w-3xl mx-auto px-6 sm:px-10 pt-6 pb-16">
+          <div className="flex items-center justify-between mb-4">
             <VerdictBadge verdict={verdict} />
-            <span className="text-xs" style={{ color: '#666' }}>{listing.location ?? '—'}</span>
+            <span className="figure text-xs" style={{ color: '#45525a' }}>{listing.location ?? '—'}</span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white leading-tight">{listing.title}</h1>
-          <p className="text-sm mt-1" style={{ color: '#666' }}>{listing.sector ?? '—'}</p>
+          <h1 className="display text-[clamp(2rem,5vw,3.5rem)] max-w-2xl" style={{ color: '#0e1011' }}>{listing.title}</h1>
+          <p className="text-sm mt-3" style={{ color: '#45525a' }}>{listing.sector ?? '—'}</p>
           {score?.missedDimension && (
-            <p className="text-xs mt-2 italic" style={{ color: '#6b9fb8' }}>↳ {score.missedDimension}</p>
+            <p className="text-xs mt-2 italic" style={{ color: '#3d5560' }}>↳ {score.missedDimension}</p>
           )}
-
-          <div className="grid grid-cols-3 gap-6 mt-6 pt-6 border-t" style={{ borderColor: '#252525' }}>
+          <div className="grid grid-cols-3 gap-6 mt-8 pt-8" style={{ borderTop: '1px solid #6f828b' }}>
             {[
               { label: 'EBITDA', value: formatCurrency(listing.ebitda) },
               { label: 'Ask Price', value: formatCurrency(listing.askingPrice) },
               { label: 'Est. Age', value: listingAge(listing.yearEstablished) },
             ].map(({ label, value }) => (
               <div key={label}>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: '#666' }}>{label}</p>
-                <p className="text-2xl font-black text-white">{value}</p>
+                <p className="eyebrow text-[10px] mb-1.5" style={{ color: '#45525a' }}>{label}</p>
+                <p className="figure text-2xl sm:text-3xl" style={{ color: '#0e1011' }}>{value}</p>
               </div>
             ))}
           </div>
-        </header>
+        </div>
+        <Waterline className="block w-full h-12 -mb-px" />
+      </header>
 
-        {verdict === 'PURSUE' && (
-          <section className="mb-10 rounded-sm border p-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#e8715a33' }}>
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#e8715a' }}>Before You Send an LOI</p>
-            <div className="flex flex-col gap-3">
-              {PURSUE_CHECKLIST.map((item) => (
-                <label key={item} className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" className="mt-0.5 accent-[#e8715a]" />
-                  <span className="text-sm leading-relaxed" style={{ color: '#999' }}>{item}</span>
-                </label>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {score && score.dealKillers.length > 0 && (
-          <section className="mb-10">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#666' }}>Deal-Killer Gates</p>
-            <div className="flex flex-col gap-2">
-              {score.dealKillers.map((gate) => (
-                <div key={gate.label} className="flex items-start gap-4 rounded-sm border p-4" style={{ backgroundColor: '#1a1a1a', borderColor: '#252525' }}>
-                  <span className="text-base mt-0.5 shrink-0">{gate.status}</span>
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-sm font-semibold text-white">{gate.label}</p>
-                    <p className="text-xs leading-relaxed" style={{ color: '#666' }}>{gate.note}</p>
-                  </div>
+      {/* ════ Ground band (ink) ════ */}
+      <main style={{ backgroundColor: '#0e1011' }}>
+        <div className="max-w-2xl mx-auto px-6 py-14">
+          {verdict === 'PURSUE' && (
+            <Reveal>
+              <section className="mb-10 p-6" style={{ backgroundColor: '#1c2024', border: '1px solid #df7d6255' }}>
+                <SectionLabel accent="#df7d62">Before You Send an LOI</SectionLabel>
+                <div className="flex flex-col gap-3">
+                  {PURSUE_CHECKLIST.map((item) => (
+                    <label key={item} className="flex items-start gap-3 cursor-pointer">
+                      <input type="checkbox" className="mt-0.5 accent-[#df7d62]" />
+                      <span className="text-sm leading-relaxed" style={{ color: '#b6bcc2' }}>{item}</span>
+                    </label>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {score && score.fitFactors.length > 0 && (
-          <section className="mb-10">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#666' }}>Fit Factors</p>
-            <div className="grid grid-cols-1 gap-2">
-              {score.fitFactors.map((f) => (
-                <div key={f.label} className="rounded-sm border p-4" style={{ backgroundColor: '#1a1a1a', borderColor: '#252525' }}>
-                  <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: '#666' }}>{f.label}</p>
-                  <p className="text-sm text-white">{f.value}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {research?.ownerInfo && (
-          <section className="mb-10">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#666' }}>Owner Profile</p>
-            <div className="rounded-sm border p-5" style={{ backgroundColor: '#1a1a1a', borderColor: '#252525' }}>
-              <p className="text-sm leading-relaxed" style={{ color: '#999' }}>{research.ownerInfo}</p>
-            </div>
-          </section>
-        )}
-
-        {score && score.topQuestions.length > 0 && (
-          <section className="mb-10">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#666' }}>The 3 Questions That Decide This</p>
-            <div className="flex flex-col gap-3">
-              {score.topQuestions.map((q, i) => (
-                <div key={i} className="flex items-start gap-4 rounded-sm border p-4" style={{ backgroundColor: '#1a1a1a', borderColor: '#252525' }}>
-                  <span className="text-xs font-black mt-0.5 shrink-0" style={{ color: '#e8715a' }}>0{i + 1}</span>
-                  <p className="text-sm leading-relaxed text-white">{q}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {research && research.keyRisks.length > 0 && (
-          <section className="mb-10">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#666' }}>Key Risks</p>
-            <div className="flex flex-col gap-2">
-              {research.keyRisks.map((risk) => (
-                <div key={risk} className="flex items-start gap-3 rounded-sm border p-4" style={{ backgroundColor: '#1a1a1a', borderColor: '#252525' }}>
-                  <span className="text-xs font-bold mt-0.5 shrink-0" style={{ color: '#d4a847' }}>!</span>
-                  <p className="text-sm leading-relaxed" style={{ color: '#999' }}>{risk}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <div className="flex items-center gap-4 pt-6 border-t" style={{ borderColor: '#252525' }}>
-          <Link href="/" className="text-xs font-semibold tracking-widest uppercase transition-colors hover:text-white" style={{ color: '#555' }}>← Back to Feed</Link>
-          {listing.listingUrl && listing.listingUrl !== '#' && (
-            <a href={listing.listingUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold tracking-widest uppercase px-5 py-2.5 rounded-sm transition-opacity hover:opacity-80" style={{ backgroundColor: '#e8715a', color: '#000' }}>
-              View Original Listing ↗
-            </a>
+              </section>
+            </Reveal>
           )}
+
+          {score && score.dealKillers.length > 0 && (
+            <Reveal>
+              <section className="mb-10">
+                <SectionLabel>Deal-Killer Gates</SectionLabel>
+                <div className="flex flex-col gap-2">
+                  {score.dealKillers.map((gate) => (
+                    <div key={gate.label} className="flex items-start gap-4 p-4" style={card}>
+                      <span className="text-base mt-0.5 shrink-0">{gate.status}</span>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-semibold" style={{ color: '#ece7dd' }}>{gate.label}</p>
+                        <p className="text-xs leading-relaxed" style={{ color: '#8b949b' }}>{gate.note}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </Reveal>
+          )}
+
+          {score && score.fitFactors.length > 0 && (
+            <Reveal>
+              <section className="mb-10">
+                <SectionLabel>Fit Factors</SectionLabel>
+                <div className="grid grid-cols-1 gap-2">
+                  {score.fitFactors.map((f) => (
+                    <div key={f.label} className="p-4" style={card}>
+                      <p className="eyebrow text-[10px] mb-1.5" style={{ color: '#8b949b' }}>{f.label}</p>
+                      <p className="text-sm" style={{ color: '#ece7dd' }}>{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </Reveal>
+          )}
+
+          {research?.ownerInfo && (
+            <Reveal>
+              <section className="mb-10">
+                <SectionLabel>Owner Profile</SectionLabel>
+                <div className="p-5" style={card}>
+                  <p className="text-sm leading-relaxed" style={{ color: '#b6bcc2' }}>{research.ownerInfo}</p>
+                </div>
+              </section>
+            </Reveal>
+          )}
+
+          {score && score.topQuestions.length > 0 && (
+            <Reveal>
+              <section className="mb-10">
+                <SectionLabel>The 3 Questions That Decide This</SectionLabel>
+                <div className="flex flex-col gap-3">
+                  {score.topQuestions.map((q, i) => (
+                    <div key={i} className="flex items-start gap-4 p-4" style={card}>
+                      <span className="figure text-base mt-0.5 shrink-0" style={{ color: '#df7d62' }}>0{i + 1}</span>
+                      <p className="text-sm leading-relaxed" style={{ color: '#ece7dd' }}>{q}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </Reveal>
+          )}
+
+          {research && research.keyRisks.length > 0 && (
+            <Reveal>
+              <section className="mb-10">
+                <SectionLabel>Key Risks</SectionLabel>
+                <div className="flex flex-col gap-2">
+                  {research.keyRisks.map((risk) => (
+                    <div key={risk} className="flex items-start gap-3 p-4" style={card}>
+                      <span className="figure text-xs font-bold mt-0.5 shrink-0" style={{ color: '#d4a24a' }}>!</span>
+                      <p className="text-sm leading-relaxed" style={{ color: '#b6bcc2' }}>{risk}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </Reveal>
+          )}
+
+          <div className="flex items-center gap-4 pt-6" style={{ borderTop: '1px solid #2b3137' }}>
+            <Link href="/" className="eyebrow text-[11px] transition-colors hover:text-[#ece7dd]" style={{ color: '#8b949b' }}>← Back to Feed</Link>
+            {listing.listingUrl && listing.listingUrl !== '#' && (
+              <a href={listing.listingUrl} target="_blank" rel="noopener noreferrer" className="ml-auto eyebrow text-[11px] px-5 py-2.5 transition-colors hover:bg-[#df7d62]" style={{ backgroundColor: '#df7d62', color: '#0e1011' }}>
+                View Original Listing ↗
+              </a>
+            )}
+          </div>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

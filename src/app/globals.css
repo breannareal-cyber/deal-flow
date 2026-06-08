@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #0f0f0f;
-  --color-surface: #1a1a1a;
-  --color-border: #252525;
-  --color-foreground: #ffffff;
-  --color-muted: #666666;
-  --color-muted-light: #999999;
+  /* Surfaces — overcast tidewater daylight */
+  --color-sky: #8a9ba3;
+  --color-sky-mist: #a7b6bb;
+  --color-sky-deep: #6f828b;
+  --color-paper: #f0ebe1;
 
-  /* Verdict colors — Epicurrence coral palette */
-  --color-pursue: #e8715a;
-  --color-dig-deeper: #d4a847;
-  --color-edge-case: #6b9fb8;
-  --color-pass: #444444;
+  /* Ink — the woodcut black */
+  --color-ink: #0e1011;
+  --color-ink-soft: #1c2024;
+  --color-ink-line: #2b3137;
 
-  --font-sans: var(--font-geist-sans);
+  /* Spot color — ration it */
+  --color-coral: #df7d62;
+  --color-coral-deep: #c4634b;
+
+  /* Text */
+  --color-on-sky: #14181b;
+  --color-on-sky-mut: #45525a;
+  --color-on-ink: #ece7dd;
+  --color-on-ink-mut: #8b949b;
+
+  /* Verdict hues — woodcut-muted */
+  --color-pursue: #df7d62;
+  --color-dig: #d4a24a;
+  --color-edge: #6f9aa8;
+  --color-pass: #5a646b;
+
+  --font-display: var(--font-archivo);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background-color: #0f0f0f;
-  color: #ffffff;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background-color: #8a9ba3;
+  color: #14181b;
+  font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* faint paper grain over the overcast sky */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ---- Display heading treatment (heavy tight grotesque) ---- */
+.display {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.figure {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---- Scroll reveal (short fade + lift) ---- */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- Ambient motion: clouds drift, sea life bobs ---- */
+@keyframes drift {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(26px); }
+  100% { transform: translateX(0); }
+}
+@keyframes bob {
+  0%   { transform: translateY(0) rotate(0deg); }
+  50%  { transform: translateY(-7px) rotate(-1deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes soar {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(18px, -12px); }
+  100% { transform: translate(0, 0); }
+}
+.drift { animation: drift 26s ease-in-out infinite; }
+.bob   { animation: bob 7s ease-in-out infinite; }
+.soar  { animation: soar 16s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .drift, .bob, .soar { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* focus ring visible on both sky and ink */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid #df7d62;
+  outline-offset: 2px;
+  border-radius: 2px;
 }

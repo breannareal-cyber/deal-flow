@@ -1,40 +1,48 @@
 import Link from 'next/link';
+import { SiteNav, SiteFooter, NavBack } from '@/components/nautical/site-chrome';
+import { TreasureChest, Cloud, Seagull, Waterline } from '@/components/nautical/illustrations';
 
 export default function SavedPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0f0f0f' }}>
-      <nav className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: '#1e1e1e' }}>
-        <Link href="/" className="text-sm font-black tracking-widest uppercase text-white hover:opacity-70 transition-opacity">
-          DEALFLOW©
-        </Link>
-        <Link href="/" className="text-xs font-semibold tracking-widest uppercase transition-colors hover:text-white" style={{ color: '#555' }}>
-          ← Feed
-        </Link>
-      </nav>
+    <div className="min-h-screen">
+      {/* ════ Poster header (sky) ════ */}
+      <header className="relative overflow-hidden">
+        <SiteNav right={<NavBack href="/" label="← Feed" />} />
+        <Cloud className="pointer-events-none absolute top-16 left-[14%] w-24 drift" />
+        <Cloud className="pointer-events-none absolute top-24 right-[20%] w-16 drift hidden sm:block" style={{ animationDelay: '-12s' }} />
+        <Seagull className="pointer-events-none absolute top-20 right-[12%] w-20 soar hidden sm:block" />
 
-      <main className="max-w-2xl mx-auto px-6 py-10">
-        <header className="mb-10">
-          <p className="text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: '#666' }}>Your List</p>
-          <h1 className="text-3xl font-black tracking-tight text-white">Saved Deals</h1>
-          <p className="text-sm mt-2" style={{ color: '#666' }}>
-            Deals you&rsquo;re tracking. Save from the feed to add them here.
+        <div className="relative max-w-3xl mx-auto px-6 sm:px-10 pt-6 pb-16">
+          <p className="eyebrow text-[11px] mb-3" style={{ color: '#45525a' }}>The Hold</p>
+          <h1 className="display text-[clamp(2.5rem,6vw,4rem)]" style={{ color: '#0e1011' }}>Saved Deals</h1>
+          <p className="text-[0.95rem] mt-4 max-w-md leading-relaxed" style={{ color: '#45525a' }}>
+            The catches you&rsquo;re tracking. Haul a deal in from the feed and it drops into the hold.
           </p>
-        </header>
+        </div>
+        <Waterline className="block w-full h-12 -mb-px" />
+      </header>
 
-        <div className="text-center py-20 border rounded-sm" style={{ borderColor: '#252525', color: '#444' }}>
-          <p className="text-sm">Nothing saved yet.</p>
-          <p className="text-xs mt-2" style={{ color: '#333' }}>
-            Hit &ldquo;Save ↗&rdquo; on any card in the feed.
-          </p>
-          <Link
-            href="/"
-            className="inline-block mt-6 text-xs font-semibold tracking-widest uppercase transition-colors hover:opacity-70"
-            style={{ color: '#e8715a' }}
-          >
-            Back to Feed →
-          </Link>
+      {/* ════ Ground band (ink) ════ */}
+      <main style={{ backgroundColor: '#0e1011' }}>
+        <div className="max-w-2xl mx-auto px-6 py-16">
+          <div className="text-center py-20 px-6" style={{ border: '1px solid #2b3137' }}>
+            <TreasureChest className="mx-auto h-20 w-24 bob" />
+            <p className="text-sm mt-7" style={{ color: '#b6bcc2' }}>The hold is empty.</p>
+            <p className="text-xs mt-2" style={{ color: '#8b949b' }}>
+              Hit &ldquo;Haul In&rdquo; on any card in the feed.
+            </p>
+            <Link
+              href="/"
+              className="inline-block mt-8 eyebrow text-[11px] px-6 py-3 transition-colors hover:bg-[#df7d62]"
+              style={{ backgroundColor: '#df7d62', color: '#0e1011' }}
+            >
+              Back to the Hunt →
+            </Link>
+          </div>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

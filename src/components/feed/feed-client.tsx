@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ScoredListing } from '@/lib/types';
 import { ListingCard } from './listing-card';
 import { ZoneModal, type ZoneKey } from './zone-modal';
+import { Reveal } from '@/components/nautical/reveal';
 
 const ZONE_MAX_3 = 3; // Zone 3 is capped
 
@@ -19,18 +20,20 @@ function ZoneHeader({
   onLearnMore: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: accent }}>
-        {label} ({count})
+    <div className="flex items-center gap-3 mb-5">
+      <span className="inline-block h-3 w-3 rotate-45" style={{ backgroundColor: accent }} />
+      <p className="eyebrow text-[11px]" style={{ color: accent }}>
+        {label}
+        <span className="figure ml-2" style={{ color: '#8b949b', letterSpacing: 0 }}>{count}</span>
       </p>
       <button
         onClick={onLearnMore}
-        className="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-sm border transition-colors hover:text-white"
-        style={{ color: '#666', borderColor: '#2a2a2a' }}
+        className="eyebrow text-[9px] px-2 py-0.5 border transition-colors hover:text-[#ece7dd]"
+        style={{ color: '#8b949b', borderColor: '#2b3137' }}
       >
         Learn more
       </button>
-      <div className="flex-1 border-t" style={{ borderColor: '#252525' }} />
+      <div className="flex-1 border-t" style={{ borderColor: '#2b3137' }} />
     </div>
   );
 }
@@ -68,8 +71,10 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
 
   const cards = (items: ScoredListing[]) => (
     <div className="flex flex-col gap-3">
-      {items.map((l) => (
-        <ListingCard key={l.id} listing={l} onPass={handlePass} onSave={handleSave} saved={saved.has(l.id)} />
+      {items.map((l, i) => (
+        <Reveal key={l.id} delay={Math.min(i, 4) * 50}>
+          <ListingCard listing={l} onPass={handlePass} onSave={handleSave} saved={saved.has(l.id)} />
+        </Reveal>
       ))}
     </div>
   );
@@ -79,44 +84,42 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
   return (
     <>
       {nothing && (
-        <div className="text-center py-20" style={{ color: '#444' }}>
-          <p className="text-sm">No deals in the pipeline right now.</p>
-          <p className="text-xs mt-1">The next scrape runs every other day at 6am MT.</p>
+        <div className="text-center py-20" style={{ color: '#8b949b' }}>
+          <p className="text-sm">Calm seas — no deals in the pipeline right now.</p>
+          <p className="text-xs mt-1" style={{ color: '#5a646b' }}>The next scrape runs every other day at 6am MT.</p>
         </div>
       )}
 
-      {/* Zone 1 — exactly within criteria */}
       {zone1.length > 0 && (
-        <section className="mb-12">
-          <ZoneHeader label="Right in Your Criteria" count={zone1.length} accent="#e8715a" onLearnMore={() => setModal('CRITERIA_MATCH')} />
+        <section className="mb-14">
+          <ZoneHeader label="Right in Your Criteria" count={zone1.length} accent="#df7d62" onLearnMore={() => setModal('CRITERIA_MATCH')} />
           {cards(zone1)}
         </section>
       )}
 
-      {/* Zone 2 — water match, outside spend */}
       {zone2.length > 0 && (
-        <section className="mb-12">
-          <ZoneHeader label="Water Match · Outside Spend" count={zone2.length} accent="#6b9fb8" onLearnMore={() => setModal('WATER_OUTSIDE_SPEND')} />
+        <section className="mb-14">
+          <ZoneHeader label="Water Match · Outside Spend" count={zone2.length} accent="#6f9aa8" onLearnMore={() => setModal('WATER_OUTSIDE_SPEND')} />
           {cards(zone2)}
         </section>
       )}
 
-      {/* Zone 3 — in spend, outside water (max 3) */}
       {zone3.length > 0 && (
-        <section className="mb-12">
-          <ZoneHeader label="In Spend · Outside Water" count={zone3.length} accent="#d4a847" onLearnMore={() => setModal('SPEND_OUTSIDE_WATER')} />
+        <section className="mb-14">
+          <ZoneHeader label="In Spend · Outside Water" count={zone3.length} accent="#d4a24a" onLearnMore={() => setModal('SPEND_OUTSIDE_WATER')} />
           {cards(zone3)}
         </section>
       )}
 
-      {/* Newly scraped, not yet scored */}
       {unscored.length > 0 && (
-        <section className="mb-12">
-          <div className="flex items-center gap-3 mb-4">
-            <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#888' }}>
-              Newly Scraped · Awaiting Scoring ({unscored.length})
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="inline-block h-3 w-3 rotate-45" style={{ backgroundColor: '#8b949b' }} />
+            <p className="eyebrow text-[11px]" style={{ color: '#8b949b' }}>
+              Freshly Hauled In · Awaiting Scoring
+              <span className="figure ml-2" style={{ letterSpacing: 0 }}>{unscored.length}</span>
             </p>
-            <div className="flex-1 border-t" style={{ borderColor: '#252525' }} />
+            <div className="flex-1 border-t" style={{ borderColor: '#2b3137' }} />
           </div>
           {cards(unscored)}
         </section>
