@@ -2,6 +2,7 @@ import { MOCK_LISTINGS } from '@/lib/mock-listings';
 import { getStorage } from '@/lib/storage';
 import { capabilities } from '@/lib/config';
 import { FeedClient } from '@/components/feed/feed-client';
+import { AddCandidate } from '@/components/feed/add-candidate';
 import { SiteNav, SiteFooter } from '@/components/nautical/site-chrome';
 import { Medallion, Cloud, Seaplane, Waterline } from '@/components/nautical/illustrations';
 import type { ScoredListing } from '@/lib/types';
@@ -70,6 +71,7 @@ export default async function FeedPage() {
       {/* ════════ GROUND BAND (ink — where the data lives) ════════ */}
       <main style={{ backgroundColor: '#0e1011' }}>
         <div className="max-w-2xl mx-auto px-6 py-14">
+          <AddCandidate />
           <FeedClient listings={listings} />
         </div>
       </main>

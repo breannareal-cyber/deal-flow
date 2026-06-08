@@ -2,6 +2,7 @@
 // Handles the documented 33-field schema; defends against missing/renamed fields.
 
 import type { Listing } from '@/lib/types';
+import { hostFromUrl } from '@/lib/enrichment';
 
 // Parse "$1,400,000" / "$500K" / "1.2M" / "Not Disclosed" → number | null
 export function parseMoney(raw: unknown): number | null {
@@ -68,6 +69,7 @@ export function normalizeListing(row: Record<string, unknown>, source = 'bizbuys
     id: `${source}-${externalId}`,
     source,
     externalId,
+    listingType: 'listed',
     title,
     location: str(pick(row, 'LOCATION', 'location', 'city')),
     state: str(pick(row, 'STATE', 'state', 'state_code')),
@@ -89,5 +91,122 @@ export function normalizeListing(row: Record<string, unknown>, source = 'bizbuys
     scrapedAt: new Date().toISOString(),
     pipelineStatus: 'scraped',
     duplicateOf: null,
+  };
+}
+
+// --- Off-market normalization (CO Business Entities, dataset 4ykn-tg5h) ---
+
+// Year out of an ISO-ish registry date ("1972-03-31T00:00:00.000" → 1972).
+function yearFromDate(raw: unknown): number | null {
+  if (!raw) return null;
+  const m = String(raw).match(/^(\d{4})/);
+  if (!m) return null;
+  const y = parseInt(m[1], 10);
+  return y >= 1800 && y <= 2100 ? y : null;
+}
+
+const OFF_MARKET_SOURCE = 'co-sos';
+
+// Build an off-market Listing from just a website URL (manual add-by-URL). The
+// registrable host is the stable key, so the same site can't be added twice
+// (www/protocol/path are normalized away). Returns null for an unusable URL.
+export function normalizeOffMarketUrl(rawUrl: string): Listing | null {
+  const host = hostFromUrl(rawUrl);
+  // Require a plausible domain: at least one dot, no spaces, a TLD-ish tail.
+  if (!host || /\s/.test(host) || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(host)) return null;
+
+  return {
+    id: `manual-${host}`,
+    source: 'manual',
+    externalId: host,
+    listingType: 'off_market',
+    title: host,
+    location: null,
+    state: null,
+    sector: null,
+    askingPrice: null,
+    revenue: null,
+    ebitda: null,
+    cashFlow: null,
+    yearEstablished: null,
+    description: null,
+    reasonForSelling: null,
+    realEstate: null,
+    financing: null,
+    employees: null,
+    brokerName: null,
+    brokerFirm: null,
+    status: null,
+    listingUrl: `https://${host}`,
+    scrapedAt: new Date().toISOString(),
+    pipelineStatus: 'scraped',
+    duplicateOf: null,
+    registeredAgent: null,
+    ownerFirstLicenseDate: null,
+    domainCreatedAt: null,
+    siteLastUpdated: null,
+    fieldSources: { title: 'estimated', listingUrl: 'source' },
+  };
+}
+
+// Normalize a Colorado Business Entities row into an off-market Listing. Off-market
+// candidates have NO disclosed financials — those gates become diligence questions.
+// `entityformdate` is recorded as a weak ('estimated') age proxy, not a confirmed
+// founding year (LLCs re-register), to be corroborated later by WHOIS/site copy.
+export function normalizeOffMarket(row: Record<string, unknown>): Listing | null {
+  const entityId = str(pick(row, 'entityid'));
+  const name = str(pick(row, 'entityname'));
+  if (!entityId || !name) return null; // unusable without a stable id + name
+
+  const city = str(pick(row, 'principalcity'));
+  const state = str(pick(row, 'principalstate'));
+  const location = [city, state].filter(Boolean).join(', ') || null;
+  const yearEstablished = yearFromDate(pick(row, 'entityformdate'));
+
+  const agentFirst = str(pick(row, 'agentfirstname'));
+  const agentLast = str(pick(row, 'agentlastname'));
+  const registeredAgent = [agentFirst, agentLast].filter(Boolean).join(' ') || null;
+
+  const sector = str(pick(row, 'entitytype')); // DPC/DLLC/… — coarse; scorer refines
+
+  const fieldSources: NonNullable<Listing['fieldSources']> = {
+    title: 'source',
+    location: 'source',
+    yearEstablished: 'estimated', // formation date ≠ confirmed founding year
+    registeredAgent: 'source',
+  };
+
+  return {
+    id: `${OFF_MARKET_SOURCE}-${entityId}`,
+    source: OFF_MARKET_SOURCE,
+    externalId: entityId,
+    listingType: 'off_market',
+    title: name,
+    location,
+    state,
+    sector,
+    askingPrice: null,
+    revenue: null,
+    ebitda: null,
+    cashFlow: null,
+    yearEstablished,
+    description: null,
+    reasonForSelling: null,
+    realEstate: null,
+    financing: null,
+    employees: null,
+    brokerName: null,
+    brokerFirm: null,
+    status: str(pick(row, 'entitystatus')),
+    // No known website yet → synthesize a SOS lookup URL keyed on the entity id.
+    listingUrl: `https://www.sos.state.co.us/biz/BusinessEntityDetail.do?quitButtonDestination=BusinessEntityResults&masterFileId=${entityId}`,
+    scrapedAt: new Date().toISOString(),
+    pipelineStatus: 'scraped',
+    duplicateOf: null,
+    registeredAgent,
+    ownerFirstLicenseDate: null,
+    domainCreatedAt: null,
+    siteLastUpdated: null,
+    fieldSources,
   };
 }

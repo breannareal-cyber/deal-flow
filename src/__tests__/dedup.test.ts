@@ -4,7 +4,7 @@ import type { Listing } from '@/lib/types';
 
 function listing(over: Partial<Listing>): Listing {
   return {
-    id: 'x', source: 'bizbuysell', externalId: 'x', title: 't', location: null, state: null,
+    id: 'x', source: 'bizbuysell', externalId: 'x', listingType: 'listed', title: 't', location: null, state: null,
     sector: null, askingPrice: null, revenue: null, ebitda: null, cashFlow: null,
     yearEstablished: null, description: null, reasonForSelling: null, realEstate: null,
     financing: null, employees: null, brokerName: null, brokerFirm: null, status: 'Active',

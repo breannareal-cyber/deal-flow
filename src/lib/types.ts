@@ -4,6 +4,11 @@
 export type Verdict = 'PURSUE' | 'DIG_DEEPER' | 'PASS' | 'EDGE_CASE';
 export type PipelineStatus = 'scraped' | 'scored' | 'researched' | 'failed';
 
+// User disposition of a candidate through the pipeline (one canonical field).
+export type Stage = 'new' | 'researching' | 'contacted' | 'passed' | 'dead';
+// Stages hidden from the active feed.
+export const HIDDEN_STAGES: Stage[] = ['passed', 'dead'];
+
 // Three feed zones the scorer classifies into:
 //  CRITERIA_MATCH      → water sector + within spend + financeable (the bullseye)
 //  WATER_OUTSIDE_SPEND → genuine water business, but EBITDA outside the size range
@@ -21,11 +26,22 @@ export type FitFactor = { label: string; value: string };
 
 export type WebFinding = { title: string; url: string; snippet: string };
 
+// Where a candidate sits in the market lifecycle:
+//  'listed'     → actively for sale (BizBuySell/Craigslist) — has disclosed financials
+//  'off_market' → not for sale; sourced from registries (CO Business Entities) — no financials
+export type ListingType = 'listed' | 'off_market';
+
+// Per-field provenance, so the UI/scorer never confuses an inferred value with a
+// confirmed one. 'source' = straight from a registry/listing; 'estimated' = derived
+// or weak proxy (e.g. formation date as age); 'confirmed' = verified in diligence.
+export type FieldSource = 'source' | 'estimated' | 'confirmed';
+
 // A listing as scraped + normalized (before scoring/research)
 export type Listing = {
   id: string;
   source: string;
   externalId: string;
+  listingType: ListingType;
   title: string;
   location: string | null;
   state: string | null;
@@ -47,6 +63,22 @@ export type Listing = {
   scrapedAt: string;
   pipelineStatus: PipelineStatus;
   duplicateOf: string | null;
+
+  // --- Off-market fields (null for 'listed' listings) ---
+  registeredAgent?: string | null; // CO Business Entities agent — NOT the owner
+  ownerFirstLicenseDate?: string | null; // reserved for a future DORA/DWR overlay
+  domainCreatedAt?: string | null; // WHOIS/RDAP — business-age signal
+  siteLastUpdated?: string | null; // Wayback last meaningful snapshot — staleness signal
+  // Per-field provenance (e.g. { yearEstablished: 'estimated', registeredAgent: 'source' }).
+  fieldSources?: Partial<Record<keyof Listing, FieldSource>> | null;
+};
+
+// Deterministic off-market sub-scores (0–5) + the derived ideal-target flag.
+// Weights live in scoring/buybox-config.ts so the thesis can be retuned in code.
+export type OffMarketScore = {
+  dimensions: Record<string, number>; // e.g. { longevity: 4, modernizationHeadroom: 5, sectorFit: 4 }
+  weightedTotal: number;
+  upsideWithoutOwner: boolean; // modernizationHeadroom high AND key-man risk low
 };
 
 // Scoring output
@@ -59,6 +91,7 @@ export type Score = {
   scoreReasoning: string;
   missedDimension?: string; // EDGE_CASE only
   summary: string; // 1-2 line card summary
+  offMarket?: OffMarketScore; // present only for off_market candidates
 };
 
 // Research output

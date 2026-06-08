@@ -1,9 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import type { ScoredListing } from '@/lib/types';
+import type { ScoredListing, Stage } from '@/lib/types';
 import { formatCurrency, listingAge } from '@/lib/types';
 import { VerdictBadge } from './verdict-badge';
+
+function StageButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="eyebrow text-[11px] transition-colors"
+      style={{ color: active ? '#df7d62' : '#8b949b' }}
+    >
+      {active ? `✓ ${label}` : label}
+    </button>
+  );
+}
 
 function DataField({ label, value }: { label: string; value: string }) {
   return (
@@ -16,17 +28,23 @@ function DataField({ label, value }: { label: string; value: string }) {
 
 type Props = {
   listing: ScoredListing;
-  onPass?: (id: string) => void;
-  onSave?: (id: string) => void;
-  saved?: boolean;
+  stage?: Stage;
+  onStage?: (id: string, stage: Stage) => void;
 };
 
-export function ListingCard({ listing, onPass, onSave, saved }: Props) {
+export function ListingCard({ listing, stage = 'new', onStage }: Props) {
   const scored = !!listing.score;
   const verdict = listing.score?.verdict ?? 'DIG_DEEPER';
   const isEdgeCase = verdict === 'EDGE_CASE';
   const isMock = listing.source === 'mock';
-  const sourceLabel = ({ bizbuysell: 'BizBuySell', craigslist: 'Craigslist' } as Record<string, string>)[listing.source] ?? listing.source;
+  const isOffMarket = listing.listingType === 'off_market';
+  const offMarket = listing.score?.offMarket;
+  const sourceLabel = ({
+    bizbuysell: 'BizBuySell',
+    craigslist: 'Craigslist',
+    'co-sos': 'CO Registry',
+    manual: 'Added by you',
+  } as Record<string, string>)[listing.source] ?? listing.source;
   const hasSourceLink = !isMock && !!listing.listingUrl && listing.listingUrl !== '#';
   const summary = scored
     ? listing.score!.summary
@@ -41,14 +59,27 @@ export function ListingCard({ listing, onPass, onSave, saved }: Props) {
       <span className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 transition-transform duration-300 group-hover:scale-x-100" style={{ backgroundColor: '#df7d62' }} />
 
       <Link href={`/listings/${listing.id}`} className="flex flex-col gap-5 px-6 pt-6 pb-0">
-        <div className="flex items-center justify-between">
-          {scored ? (
-            <VerdictBadge verdict={verdict} />
-          ) : (
-            <span className="eyebrow text-[11px]" style={{ color: '#8b949b' }}>New · Unscored</span>
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {scored ? (
+              <VerdictBadge verdict={verdict} />
+            ) : (
+              <span className="eyebrow text-[11px]" style={{ color: '#8b949b' }}>New · Unscored</span>
+            )}
+            {isOffMarket && (
+              <span className="eyebrow text-[9px] px-2 py-0.5" style={{ color: '#6f9aa8', border: '1px solid #2b3137' }}>
+                Off-market
+              </span>
+            )}
+          </div>
           <span className="figure text-xs" style={{ color: '#8b949b' }}>{listing.location ?? '—'}</span>
         </div>
+
+        {offMarket?.upsideWithoutOwner && (
+          <span className="self-start eyebrow text-[9px] px-2 py-0.5" style={{ backgroundColor: '#df7d62', color: '#0e1011' }}>
+            ★ Upside without the owner
+          </span>
+        )}
 
         <div>
           <h2 className="display text-lg leading-tight transition-colors group-hover:text-[#df7d62]" style={{ color: '#ece7dd' }}>
@@ -60,11 +91,20 @@ export function ListingCard({ listing, onPass, onSave, saved }: Props) {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t" style={{ borderColor: '#2b3137' }}>
-          <DataField label="EBITDA" value={formatCurrency(listing.ebitda)} />
-          <DataField label="Ask Price" value={formatCurrency(listing.askingPrice)} />
-          <DataField label="Est. Age" value={listingAge(listing.yearEstablished)} />
-        </div>
+        {isOffMarket ? (
+          // Off-market has no disclosed financials — show the signals we DO have.
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t" style={{ borderColor: '#2b3137' }}>
+            <DataField label="Founded" value={listing.yearEstablished ? `${listing.yearEstablished}` : '—'} />
+            <DataField label="Fit (est.)" value={offMarket ? `${offMarket.weightedTotal}/5` : '—'} />
+            <DataField label="Est. Age" value={listingAge(listing.yearEstablished)} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t" style={{ borderColor: '#2b3137' }}>
+            <DataField label="EBITDA" value={formatCurrency(listing.ebitda)} />
+            <DataField label="Ask Price" value={formatCurrency(listing.askingPrice)} />
+            <DataField label="Est. Age" value={listingAge(listing.yearEstablished)} />
+          </div>
+        )}
 
         <p className="text-sm leading-relaxed pb-1" style={{ color: '#b6bcc2' }}>
           &ldquo;{summary}&rdquo;
@@ -89,15 +129,12 @@ export function ListingCard({ listing, onPass, onSave, saved }: Props) {
         ) : (
           <span className="eyebrow text-[11px]" style={{ color: '#8b949b' }}>via {sourceLabel}</span>
         )}
-        {onPass && (
-          <button onClick={() => onPass(listing.id)} className="eyebrow text-[11px] transition-colors hover:text-[#ece7dd]" style={{ color: '#8b949b' }}>
-            Throw Back
-          </button>
-        )}
-        {onSave && (
-          <button onClick={() => onSave(listing.id)} className="eyebrow text-[11px] transition-colors" style={{ color: saved ? '#df7d62' : '#8b949b' }}>
-            {saved ? 'In the Hold' : 'Haul In'}
-          </button>
+        {onStage && (
+          <div className="flex items-center gap-3">
+            <StageButton label="Research" active={stage === 'researching'} onClick={() => onStage(listing.id, 'researching')} />
+            <StageButton label="Contacted" active={stage === 'contacted'} onClick={() => onStage(listing.id, 'contacted')} />
+            <StageButton label="Pass" active={stage === 'passed'} onClick={() => onStage(listing.id, 'passed')} />
+          </div>
         )}
         <Link href={`/listings/${listing.id}`} className="ml-auto eyebrow text-[11px] transition-opacity hover:opacity-60" style={{ color: '#ece7dd' }}>
           Dig Deeper →

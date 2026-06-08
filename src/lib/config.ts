@@ -23,6 +23,10 @@ export const config = {
     url: process.env.DATABASE_URL ?? '',
   },
   cronSecret: process.env.CRON_SECRET ?? '',
+  // Off-market sourcing: how many NEW candidates the scheduled scrub surfaces per run.
+  offmarket: {
+    batch: Number(process.env.OFFMARKET_BATCH ?? 3),
+  },
   // BizBuySell: keyword search is broken in the actor, but STATE filtering works.
   // So we scrape state category pages (CO + Mountain West) and filter to water/
   // environmental in-code via the keyword pre-filter below. Claude then does the

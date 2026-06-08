@@ -1,9 +1,12 @@
 // Pipeline orchestrator: scrape → score → research. Each stage degrades gracefully
 // if its credential is missing, and logs what it did. Batched to stay under timeouts.
 
-import { capabilities, matchesWaterFilter } from './config';
+import { capabilities, config, matchesWaterFilter } from './config';
 import { scrapeAllSources, enabledSources } from './scrapers/sources';
+import { fetchOffMarketCandidates } from './scrapers/sources/colorado-offmarket';
 import { scoreListing } from './scoring/score-listing';
+import { scoreOffMarket } from './scoring/score-offmarket';
+import { enrichOffMarket } from './enrichment';
 import { researchListing } from './research/synthesize';
 import { getStorage } from './storage';
 import type { ScoredListing } from './types';
@@ -135,4 +138,49 @@ export async function runFullPipeline(): Promise<PipelineResult> {
 
 export function activeSources(): string[] {
   return enabledSources().map((s) => s.name);
+}
+
+// Off-market scrub: surface exactly N NEW Colorado water businesses (never a repeat),
+// enrich each (Wayback/WHOIS), and score deterministically. Runs with ZERO paid
+// credentials — Socrata is free and off-market scoring needs no LLM. The existing-id
+// set (dismissed candidates persist) guarantees nothing is ever re-surfaced.
+export async function runOffMarketScrape(deps: {
+  storage?: ReturnType<typeof getStorage>;
+  fetchFn?: typeof fetch;
+  enrich?: typeof enrichOffMarket;
+} = {}): Promise<{
+  scraped: number;
+  added: number;
+  scored: number;
+  errors: string[];
+}> {
+  const errors: string[] = [];
+  const storage = deps.storage ?? getStorage();
+  const enrich = deps.enrich ?? enrichOffMarket;
+
+  const existingIds = await storage.getExistingIds('co-sos-');
+  let candidates;
+  try {
+    candidates = await fetchOffMarketCandidates({ limit: config.offmarket.batch, existingIds, fetchFn: deps.fetchFn });
+  } catch (e) {
+    return { scraped: 0, added: 0, scored: 0, errors: [`offmarket fetch: ${(e as Error).message}`] };
+  }
+
+  let scored = 0;
+  // Small N (the batch cap), so enrich + score serially — no concurrency race on the
+  // JSON store, and well within the function budget.
+  for (const base of candidates) {
+    try {
+      const enriched = await enrich(base);
+      const scoredListing: ScoredListing = { ...enriched, score: null, research: null };
+      await storage.upsertListings([scoredListing]);
+      await storage.saveScore(enriched.id, scoreOffMarket(enriched));
+      await storage.setStatus(enriched.id, 'scored');
+      scored++;
+    } catch (e) {
+      errors.push(`offmarket ${base.id}: ${(e as Error).message}`);
+    }
+  }
+
+  return { scraped: candidates.length, added: candidates.length, scored, errors };
 }

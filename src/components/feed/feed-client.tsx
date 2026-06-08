@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { ScoredListing } from '@/lib/types';
+import type { ScoredListing, Stage } from '@/lib/types';
+import { HIDDEN_STAGES } from '@/lib/types';
 import { ListingCard } from './listing-card';
 import { ZoneModal, type ZoneKey } from './zone-modal';
 import { Reveal } from '@/components/nautical/reveal';
@@ -38,32 +39,31 @@ function ZoneHeader({
   );
 }
 
+type TypeFilter = 'all' | 'off_market' | 'listed';
+
 export function FeedClient({ listings }: { listings: ScoredListing[] }) {
-  const [passed, setPassed] = useState<Set<string>>(new Set());
-  const [saved, setSaved] = useState<Set<string>>(new Set());
+  // Optimistic local stage overrides (server is source of truth on reload).
+  const [stages, setStages] = useState<Record<string, Stage>>({});
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [modal, setModal] = useState<ZoneKey | null>(null);
 
-  const record = (id: string, action: 'pass' | 'save') => {
+  const stageOf = (l: ScoredListing): Stage => stages[l.id] ?? 'new';
+
+  const handleStage = (id: string, stage: Stage) => {
+    setStages((prev) => ({ ...prev, [id]: stage })); // optimistic
     fetch(`/api/listings/${id}/action`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ stage }),
     }).catch(() => {});
   };
-  const handlePass = (id: string) => {
-    setPassed((prev) => new Set([...prev, id]));
-    record(id, 'pass');
-  };
-  const handleSave = (id: string) => {
-    setSaved((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); // un-save: local only for now (see /saved TODO)
-      else { next.add(id); record(id, 'save'); }
-      return next;
-    });
-  };
 
-  const visible = listings.filter((l) => !passed.has(l.id));
+  // Hide locally-dismissed (passed/dead) candidates + apply the type filter.
+  const visible = listings.filter((l) => {
+    if (HIDDEN_STAGES.includes(stageOf(l))) return false;
+    if (typeFilter !== 'all' && l.listingType !== typeFilter) return false;
+    return true;
+  });
   const zone1 = visible.filter((l) => l.score?.zone === 'CRITERIA_MATCH');
   const zone2 = visible.filter((l) => l.score?.zone === 'WATER_OUTSIDE_SPEND');
   const zone3 = visible.filter((l) => l.score?.zone === 'SPEND_OUTSIDE_WATER').slice(0, ZONE_MAX_3);
@@ -73,7 +73,7 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
     <div className="flex flex-col gap-3">
       {items.map((l, i) => (
         <Reveal key={l.id} delay={Math.min(i, 4) * 50}>
-          <ListingCard listing={l} onPass={handlePass} onSave={handleSave} saved={saved.has(l.id)} />
+          <ListingCard listing={l} stage={stageOf(l)} onStage={handleStage} />
         </Reveal>
       ))}
     </div>
@@ -81,8 +81,31 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
 
   const nothing = zone1.length + zone2.length + zone3.length + unscored.length === 0;
 
+  const filters: { key: TypeFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'off_market', label: 'Off-market' },
+    { key: 'listed', label: 'Listed' },
+  ];
+
   return (
     <>
+      <div className="flex items-center gap-2 mb-8">
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setTypeFilter(f.key)}
+            className="eyebrow text-[10px] px-3 py-1 transition-colors"
+            style={
+              typeFilter === f.key
+                ? { backgroundColor: '#df7d62', color: '#0e1011' }
+                : { color: '#8b949b', border: '1px solid #2b3137' }
+            }
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {nothing && (
         <div className="text-center py-20" style={{ color: '#8b949b' }}>
           <p className="text-sm">Calm seas — no deals in the pipeline right now.</p>

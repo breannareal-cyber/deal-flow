@@ -3,7 +3,8 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { ScoredListing, Score, Research, PipelineStatus } from '@/lib/types';
+import type { ScoredListing, Score, Research, PipelineStatus, Stage } from '@/lib/types';
+import { HIDDEN_STAGES } from '@/lib/types';
 import type { StoredListing } from './index';
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -31,13 +32,13 @@ export async function upsertListings(listings: ScoredListing[]): Promise<number>
   for (const l of listings) {
     const key = `${l.source}:${l.externalId}`;
     if (!db[key]) added++;
-    // Preserve existing score/research/action on re-scrape; update listing fields
+    // Preserve existing score/research/stage on re-scrape; update listing fields
     const existing = db[key];
     db[key] = {
       ...l,
       score: existing?.score ?? l.score,
       research: existing?.research ?? l.research,
-      userAction: existing?.userAction ?? null,
+      stage: existing?.stage ?? 'new',
       pipelineStatus: existing?.pipelineStatus ?? l.pipelineStatus,
     };
   }
@@ -96,7 +97,7 @@ export async function recordFailure(listingId: string): Promise<void> {
 export async function getFeed(): Promise<StoredListing[]> {
   const db = await read();
   return Object.values(db)
-    .filter((l) => l.userAction !== 'pass' && !l.duplicateOf)
+    .filter((l) => !HIDDEN_STAGES.includes(l.stage ?? 'new') && !l.duplicateOf)
     .sort((a, b) => (b.scrapedAt > a.scrapedAt ? 1 : -1));
 }
 
@@ -106,11 +107,19 @@ export async function getById(id: string): Promise<StoredListing | null> {
   return key ? db[key] : null;
 }
 
-export async function setAction(id: string, action: 'pass' | 'save' | 'pursue'): Promise<void> {
+export async function getExistingIds(prefix?: string): Promise<Set<string>> {
+  const db = await read();
+  const ids = Object.values(db)
+    .map((l) => l.id)
+    .filter((id) => (prefix ? id.startsWith(prefix) : true));
+  return new Set(ids);
+}
+
+export async function setStage(id: string, stage: Stage): Promise<void> {
   const db = await read();
   const key = keyFor(db, id);
   if (!key) return;
-  db[key].userAction = action;
+  db[key].stage = stage;
   await write(db);
 }
 
