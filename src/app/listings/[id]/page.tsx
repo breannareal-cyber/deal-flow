@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { MOCK_LISTINGS } from '@/lib/mock-listings';
 import { getStorage } from '@/lib/storage';
+import { capabilities } from '@/lib/config';
 import { formatCurrency, listingAge } from '@/lib/types';
 import type { ScoredListing } from '@/lib/types';
 import { VerdictBadge } from '@/components/feed/verdict-badge';
@@ -26,7 +27,7 @@ async function getListing(id: string): Promise<ScoredListing | null> {
   if (stored) return stored;
   // Only fall back to mock when storage is globally empty (matches the feed's
   // mock-vs-real logic) — never mix a mock detail into a real pipeline.
-  if ((await storage.count()) === 0) {
+  if (capabilities.showSampleData() && (await storage.count()) === 0) {
     return MOCK_LISTINGS.find((l) => l.id === id) ?? null;
   }
   return null;

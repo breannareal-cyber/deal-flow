@@ -7,10 +7,11 @@
 // rowToStoredListing). Writes use neon-http single statements (no multi-statement
 // transactions needed).
 
-import { eq, and, or, ne, isNull, desc, count as countRows } from 'drizzle-orm';
+import { eq, and, isNull, desc, like, notInArray, count as countRows } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { listings, scores, research } from '@/db/schema';
-import type { Listing, ScoredListing, Score, Research, PipelineStatus } from '@/lib/types';
+import type { Listing, ScoredListing, Score, Research, PipelineStatus, Stage } from '@/lib/types';
+import { HIDDEN_STAGES } from '@/lib/types';
 import type { StoredListing } from './index';
 
 // --- Row → domain mapping (pure, unit-tested) ---
@@ -24,7 +25,7 @@ export type JoinedRow = {
     scrapedAt: Date;
     duplicateOf: string | null;
     retryCount: number;
-    userAction: 'pass' | 'save' | 'pursue' | null;
+    stage: Stage;
     data: Listing;
   };
   scores: { listingId: string; verdict: Score['verdict']; data: Score; scoredAt: Date } | null;
@@ -45,7 +46,7 @@ export function rowToStoredListing(row: JoinedRow): StoredListing {
     duplicateOf: l.duplicateOf,
     score: row.scores?.data ?? null,
     research: row.research?.data ?? null,
-    userAction: l.userAction ?? null,
+    stage: l.stage ?? 'new',
     retryCount: l.retryCount,
   };
 }
@@ -89,7 +90,7 @@ export async function upsertListings(incoming: ScoredListing[]): Promise<number>
       .onConflictDoUpdate({
         target: listings.id,
         // Re-scrape refreshes listing fields but PRESERVES pipelineStatus,
-        // retryCount, and userAction (matches json-store semantics).
+        // retryCount, and stage (matches json-store semantics).
         set: { data: listingData, scrapedAt: new Date(l.scrapedAt) },
       });
   }
@@ -144,7 +145,7 @@ export async function recordFailure(listingId: string): Promise<void> {
 
 export async function getFeed(): Promise<StoredListing[]> {
   const rows = await joinAll()
-    .where(and(isNull(listings.duplicateOf), or(isNull(listings.userAction), ne(listings.userAction, 'pass'))))
+    .where(and(isNull(listings.duplicateOf), notInArray(listings.stage, HIDDEN_STAGES)))
     .orderBy(desc(listings.scrapedAt));
   return (rows as JoinedRow[]).map(rowToStoredListing);
 }
@@ -155,8 +156,15 @@ export async function getById(id: string): Promise<StoredListing | null> {
   return row ? rowToStoredListing(row) : null;
 }
 
-export async function setAction(id: string, action: 'pass' | 'save' | 'pursue'): Promise<void> {
-  await db.update(listings).set({ userAction: action }).where(eq(listings.id, id));
+export async function getExistingIds(prefix?: string): Promise<Set<string>> {
+  const rows = prefix
+    ? await db.select({ id: listings.id }).from(listings).where(like(listings.id, `${prefix}%`))
+    : await db.select({ id: listings.id }).from(listings);
+  return new Set(rows.map((r) => r.id));
+}
+
+export async function setStage(id: string, stage: Stage): Promise<void> {
+  await db.update(listings).set({ stage }).where(eq(listings.id, id));
 }
 
 export async function count(): Promise<number> {

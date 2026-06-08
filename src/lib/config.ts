@@ -23,6 +23,10 @@ export const config = {
     url: process.env.DATABASE_URL ?? '',
   },
   cronSecret: process.env.CRON_SECRET ?? '',
+  // Off-market sourcing: how many NEW candidates the scheduled scrub surfaces per run.
+  offmarket: {
+    batch: Number(process.env.OFFMARKET_BATCH ?? 3),
+  },
   // BizBuySell: keyword search is broken in the actor, but STATE filtering works.
   // So we scrape state category pages (CO + Mountain West) and filter to water/
   // environmental in-code via the keyword pre-filter below. Claude then does the
@@ -86,4 +90,8 @@ export const capabilities = {
   canScore: () => !!config.anthropic.apiKey,
   canResearch: () => !!config.tavily.apiKey,
   usesDatabase: () => !!config.database.url,
+  // Sample fallback companies are for local dev + preview demos only. On the
+  // production site an empty store must show the real empty state, never fake
+  // listings that could be mistaken for sourced deals.
+  showSampleData: () => process.env.VERCEL_ENV !== 'production',
 };

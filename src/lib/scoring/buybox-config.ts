@@ -35,3 +35,23 @@ export const DEAL_KILLER_GATES = [
 ];
 
 export const BUY_BOX_VERSION = 1;
+
+// Off-market scoring weights — the lever for retuning the thesis as Breanna learns
+// the market. Each dimension is scored 0–5 (see scoring/score-offmarket.ts); the
+// weighted average is the fit score. Edit these numbers, not the scorer.
+//   longevity            — years in operation (retirement-likelihood proxy)
+//   cashFlowResilience   — essential/recurring/fragmented (inferred; off-market = coarse)
+//   modernizationHeadroom— how much digital/commercial upside is unrealized
+//   sectorFit            — bullseye water vs adjacent vs off-thesis
+//   keyManRisk           — owner-dependence (LOWER is better; flips in the math)
+//   sellerMotivation     — old + stale + single-location tells
+export const OFFMARKET_WEIGHTS = {
+  longevity: 2,
+  cashFlowResilience: 2,
+  modernizationHeadroom: 3,
+  sectorFit: 3,
+  keyManRisk: 2,
+  sellerMotivation: 2,
+} as const;
+
+export type OffMarketWeights = Record<keyof typeof OFFMARKET_WEIGHTS, number>;

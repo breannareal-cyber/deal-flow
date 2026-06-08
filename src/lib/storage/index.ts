@@ -2,13 +2,13 @@
 // JSON file (works on localhost; Vercel's FS is read-only so production needs Neon).
 // The pipeline calls this interface and never knows which backend is active.
 
-import type { ScoredListing, Score, Research, PipelineStatus } from '@/lib/types';
+import type { ScoredListing, Score, Research, PipelineStatus, Stage } from '@/lib/types';
 import { capabilities } from '@/lib/config';
 import * as jsonStore from './json-store';
 import * as neonStore from './neon-store';
 
 export type StoredListing = ScoredListing & {
-  userAction?: 'pass' | 'save' | 'pursue' | null;
+  stage?: Stage;
   retryCount?: number; // failed scoring/research attempts; retryable until MAX_RETRIES
 };
 
@@ -21,7 +21,10 @@ export interface Storage {
   recordFailure(listingId: string): Promise<void>;
   getFeed(): Promise<StoredListing[]>;
   getById(id: string): Promise<StoredListing | null>;
-  setAction(id: string, action: 'pass' | 'save' | 'pursue'): Promise<void>;
+  // All ids ever stored (optionally filtered by id prefix, e.g. 'co-sos-'). Lets the
+  // off-market source cap at N NEW per run and never re-surface a dismissed candidate.
+  getExistingIds(prefix?: string): Promise<Set<string>>;
+  setStage(id: string, stage: Stage): Promise<void>;
   count(): Promise<number>;
 }
 

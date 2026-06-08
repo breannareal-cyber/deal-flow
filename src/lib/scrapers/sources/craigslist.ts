@@ -43,6 +43,7 @@ function parseResults(html: string, city: string): Listing[] {
       id: `craigslist-${externalId}`,
       source: 'craigslist',
       externalId,
+      listingType: 'listed',
       title,
       location: location ? `${location}, (${city})` : city,
       state: null,

@@ -15,7 +15,7 @@ import type { Listing, Score, Research } from '@/lib/types';
 // CONSTRAIN are promoted to real columns:
 //   - id: the app's own text id (`${source}-${externalId}`), NOT a random uuid —
 //     the pipeline and UI route on this exact id.
-//   - pipelineStatus / duplicateOf / retryCount / userAction: MUTATED after scrape,
+//   - pipelineStatus / duplicateOf / retryCount / stage: MUTATED after scrape,
 //     so they live in columns and the read mapper overlays them over the jsonb
 //     snapshot (which may be stale).
 //   - scrapedAt: feed sort key.
@@ -38,10 +38,14 @@ export const verdictEnum = pgEnum('verdict_type', [
 
 export const researchDepthEnum = pgEnum('research_depth', ['medium', 'deep']);
 
-export const userActionEnum = pgEnum('user_action_type', [
-  'pass',
-  'save',
-  'pursue',
+// Pipeline stage = the user's disposition of a candidate (ONE canonical field —
+// replaces the old user_action pass/save/pursue, which overlapped confusingly).
+export const stageEnum = pgEnum('pipeline_stage', [
+  'new',
+  'researching',
+  'contacted',
+  'passed',
+  'dead',
 ]);
 
 export const listings = pgTable('listings', {
@@ -52,7 +56,7 @@ export const listings = pgTable('listings', {
   scrapedAt: timestamp('scraped_at').notNull().defaultNow(),
   duplicateOf: text('duplicate_of'), // self-ref to listings.id; loose (no FK), matches JSON store
   retryCount: integer('retry_count').notNull().default(0),
-  userAction: userActionEnum('user_action'), // null until the user acts
+  stage: stageEnum('stage').notNull().default('new'), // user disposition through the pipeline
   data: jsonb('data').$type<Listing>().notNull(),
 }, (t) => [
   unique().on(t.source, t.externalId),

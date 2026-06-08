@@ -14,6 +14,7 @@ function mock(
     id,
     source: 'mock',
     externalId: id,
+    listingType: 'listed',
     title: '',
     location: null,
     state: null,

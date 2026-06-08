@@ -3,7 +3,7 @@ import { rowToStoredListing, type JoinedRow } from '@/lib/storage/neon-store';
 import type { Listing, Score, Research } from '@/lib/types';
 
 // The Neon store keeps the full typed objects in jsonb columns, but projects the
-// MUTABLE fields (pipelineStatus, duplicateOf, retryCount, userAction) into real
+// MUTABLE fields (pipelineStatus, duplicateOf, retryCount, stage) into real
 // columns. The mapper must overlay those columns over the (possibly stale) jsonb
 // snapshot — otherwise a status change made via setStatus() wouldn't be visible.
 
@@ -12,6 +12,7 @@ function listingData(over: Partial<Listing> = {}): Listing {
     id: 'bizbuysell-12345',
     source: 'bizbuysell',
     externalId: '12345',
+    listingType: 'listed',
     title: 'Front Range Water Treatment Co.',
     location: 'Boulder, CO',
     state: 'CO',
@@ -71,7 +72,7 @@ function row(over: Partial<JoinedRow['listings']> = {}, score: Score | null = nu
       scrapedAt: new Date('2026-06-07T12:00:00Z'),
       duplicateOf: null,
       retryCount: 0,
-      userAction: null,
+      stage: 'new',
       data: listingData(),
       ...over,
     },
@@ -108,11 +109,11 @@ describe('rowToStoredListing', () => {
     expect(out.research).toBeNull();
   });
 
-  it('maps research and surfaces userAction + retryCount from columns', () => {
-    const out = rowToStoredListing(row({ userAction: 'save', retryCount: 2 }, scoreData(), researchData()));
+  it('maps research and surfaces stage + retryCount from columns', () => {
+    const out = rowToStoredListing(row({ stage: 'researching', retryCount: 2 }, scoreData(), researchData()));
     expect(out.research?.depth).toBe('medium');
     expect(out.research?.keyRisks).toEqual(['Owner-held licenses']);
-    expect(out.userAction).toBe('save');
+    expect(out.stage).toBe('researching');
     expect(out.retryCount).toBe(2);
   });
 
