@@ -4,7 +4,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '@/lib/config';
 import type { Listing, Score, Verdict } from '@/lib/types';
-import { BUY_BOX, BUY_BOX_VERSION } from './buybox-config';
+import { BUY_BOX, BUY_BOX_VERSION, isProhibited } from './buybox-config';
 
 const SYSTEM_PROMPT = `You are a skeptical ETA (entrepreneurship-through-acquisition) deal screener for Breanna, a first-time searcher buying a water/environmental services business.
 
@@ -78,6 +78,20 @@ const VALID_ZONES = ['CRITERIA_MATCH', 'WATER_OUTSIDE_SPEND', 'SPEND_OUTSIDE_WAT
 
 export async function scoreListing(listing: Listing): Promise<Score> {
   if (!config.anthropic.apiKey) throw new Error('ANTHROPIC_API_KEY not set — cannot score');
+
+  // Hard rule: prohibited categories never reach the model — guns/jewelry/liquor/
+  // laundromats are excluded outright, regardless of financials.
+  if (isProhibited(listing.title, listing.sector, listing.description)) {
+    return {
+      verdict: 'PASS',
+      zone: 'EXCLUDE',
+      summary: 'Off-thesis category — hard-excluded by buy-box rule.',
+      dealKillers: [],
+      fitFactors: [],
+      topQuestions: [],
+      scoreReasoning: 'Matched a prohibited sector (firearms, jewelry/pawn, liquor, or laundromat) — excluded before scoring.',
+    };
+  }
 
   const client = new Anthropic({ apiKey: config.anthropic.apiKey });
   const res = await client.messages.create({
