@@ -3,9 +3,7 @@ import { getStorage } from '@/lib/storage';
 import { capabilities } from '@/lib/config';
 import { FeedClient } from '@/components/feed/feed-client';
 import { SiteNav, SiteFooter } from '@/components/nautical/site-chrome';
-import {
-  Medallion, Cloud, Seagull, Seaplane, Lighthouse, Kayaker, SharkPaddler, Waterline,
-} from '@/components/nautical/illustrations';
+import { Medallion, Cloud, Seaplane, Waterline } from '@/components/nautical/illustrations';
 import type { ScoredListing } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +29,6 @@ export default async function FeedPage() {
         <Cloud className="pointer-events-none absolute top-24 left-[8%] w-28 drift" />
         <Cloud className="pointer-events-none absolute top-16 right-[26%] w-20 drift hidden sm:block" style={{ animationDelay: '-9s' }} />
         <Cloud className="pointer-events-none absolute top-40 left-[40%] w-16 drift hidden md:block" style={{ animationDelay: '-15s' }} />
-        <Seagull className="pointer-events-none absolute top-32 left-[55%] w-20 soar hidden md:block" />
         <Seaplane className="pointer-events-none absolute top-24 right-[10%] w-20 drift hidden sm:block" style={{ animationDelay: '-5s' }} />
 
         <div className="relative max-w-5xl mx-auto px-6 sm:px-10 pt-8 pb-4 grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
@@ -62,13 +59,7 @@ export default async function FeedPage() {
           </div>
         </div>
 
-        {/* character band standing on the waterline */}
-        <div className="relative max-w-6xl mx-auto h-28 sm:h-36">
-          <Kayaker className="pointer-events-none absolute bottom-0 left-[4%] w-32 sm:w-44 bob" />
-          <SharkPaddler className="pointer-events-none absolute bottom-0 right-[16%] w-16 sm:w-24 bob hidden sm:block" style={{ animationDelay: '-3s' }} />
-          <Lighthouse className="pointer-events-none absolute bottom-0 right-[3%] w-16 sm:w-20" />
-        </div>
-
+        <div className="h-10 sm:h-16" />
         <Waterline className="block w-full h-12 sm:h-14 -mb-px" />
       </header>
 

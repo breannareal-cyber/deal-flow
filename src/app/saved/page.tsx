@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { SiteNav, SiteFooter, NavBack } from '@/components/nautical/site-chrome';
-import { TreasureChest, Cloud, Seagull, Waterline } from '@/components/nautical/illustrations';
+import { TreasureChest, Cloud, Waterline } from '@/components/nautical/illustrations';
 
 export default function SavedPage() {
   return (
@@ -10,7 +10,6 @@ export default function SavedPage() {
         <SiteNav right={<NavBack href="/" label="← Feed" />} />
         <Cloud className="pointer-events-none absolute top-16 left-[14%] w-24 drift" />
         <Cloud className="pointer-events-none absolute top-24 right-[20%] w-16 drift hidden sm:block" style={{ animationDelay: '-12s' }} />
-        <Seagull className="pointer-events-none absolute top-20 right-[12%] w-20 soar hidden sm:block" />
 
         <div className="relative max-w-3xl mx-auto px-6 sm:px-10 pt-6 pb-16">
           <p className="eyebrow text-[11px] mb-3" style={{ color: '#45525a' }}>The Hold</p>
