@@ -86,4 +86,8 @@ export const capabilities = {
   canScore: () => !!config.anthropic.apiKey,
   canResearch: () => !!config.tavily.apiKey,
   usesDatabase: () => !!config.database.url,
+  // Sample fallback companies are for local dev + preview demos only. On the
+  // production site an empty store must show the real empty state, never fake
+  // listings that could be mistaken for sourced deals.
+  showSampleData: () => process.env.VERCEL_ENV !== 'production',
 };

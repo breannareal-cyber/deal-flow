@@ -25,6 +25,9 @@ export function ListingCard({ listing, onPass, onSave, saved }: Props) {
   const scored = !!listing.score;
   const verdict = listing.score?.verdict ?? 'DIG_DEEPER';
   const isEdgeCase = verdict === 'EDGE_CASE';
+  const isMock = listing.source === 'mock';
+  const sourceLabel = ({ bizbuysell: 'BizBuySell', craigslist: 'Craigslist' } as Record<string, string>)[listing.source] ?? listing.source;
+  const hasSourceLink = !isMock && !!listing.listingUrl && listing.listingUrl !== '#';
   const summary = scored
     ? listing.score!.summary
     : listing.description?.slice(0, 160) ?? `Newly scraped from ${listing.source}. Awaiting buy-box scoring.`;
@@ -69,6 +72,23 @@ export function ListingCard({ listing, onPass, onSave, saved }: Props) {
       </Link>
 
       <div className="flex items-center gap-5 px-6 pb-5 pt-1 border-t" style={{ borderColor: '#2b3137' }}>
+        {isMock ? (
+          <span className="eyebrow text-[10px] px-2 py-0.5" style={{ color: '#6f9aa8', border: '1px solid #2b3137' }}>
+            Sample
+          </span>
+        ) : hasSourceLink ? (
+          <a
+            href={listing.listingUrl!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="eyebrow text-[11px] transition-colors hover:text-[#df7d62]"
+            style={{ color: '#8b949b' }}
+          >
+            via {sourceLabel} ↗
+          </a>
+        ) : (
+          <span className="eyebrow text-[11px]" style={{ color: '#8b949b' }}>via {sourceLabel}</span>
+        )}
         {onPass && (
           <button onClick={() => onPass(listing.id)} className="eyebrow text-[11px] transition-colors hover:text-[#ece7dd]" style={{ color: '#8b949b' }}>
             Throw Back

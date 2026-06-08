@@ -13,7 +13,11 @@ const TODAY = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
 export default async function FeedPage() {
   const stored = await getStorage().getFeed();
   const usingReal = stored.length > 0;
-  const listings: ScoredListing[] = usingReal ? stored : MOCK_LISTINGS;
+  const listings: ScoredListing[] = usingReal
+    ? stored
+    : capabilities.showSampleData()
+      ? MOCK_LISTINGS
+      : [];
 
   const inCriteria = listings.filter((l) => l.score?.zone === 'CRITERIA_MATCH').length;
   const waterOutside = listings.filter((l) => l.score?.zone === 'WATER_OUTSIDE_SPEND').length;
