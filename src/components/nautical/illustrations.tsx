@@ -224,16 +224,26 @@ export function MapX(props: Illo) {
 export function TreasureChest(props: Illo) {
   return (
     <svg viewBox="0 0 120 96" {...base(props)}>
+      {/* chest body + domed lid */}
       <g fill={INK}>
         <path d="M14 44 H106 V86 H14 Z" />
-        <path d="M14 44 C14 20 106 20 106 44 Z" />
+        <path d="M14 44 C14 19 106 19 106 44 Z" />
       </g>
-      <rect x="14" y="54" width="92" height="5" fill={PAPER} />
-      <g fill={PAPER}>
-        <path d="M30 30 V44 H26 V31 Z M46 26 V44 H42 V26 Z M74 26 V44 H70 V26 Z M90 30 V44 H86 V31 Z" opacity="0.5" />
+      {/* lid / body seam */}
+      <rect x="14" y="50" width="92" height="4" fill={PAPER} />
+      {/* iron banding straps */}
+      <g fill={PAPER} opacity="0.85">
+        <rect x="28" y="29" width="4" height="57" />
+        <rect x="88" y="29" width="4" height="57" />
       </g>
-      <rect x="52" y="50" width="16" height="18" rx="2" fill={CORAL} />
-      <circle cx="60" cy="58" r="2.4" fill={INK} />
+      {/* plank seams on the body */}
+      <g stroke={PAPER} strokeWidth="1.2" opacity="0.3">
+        <path d="M14 67 H106 M14 78 H106" />
+      </g>
+      {/* lock plate + keyhole (the one coral mark) */}
+      <rect x="52" y="49" width="16" height="17" rx="2" fill={CORAL} />
+      <circle cx="60" cy="55" r="2.2" fill={INK} />
+      <path d="M60 56 L58 61 H62 Z" fill={INK} />
     </svg>
   );
 }
