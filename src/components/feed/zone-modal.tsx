@@ -27,7 +27,7 @@ const MODALS: Record<ZoneKey, { title: string; accent: string; body: React.React
         </p>
         <div className="flex flex-col gap-px rounded-sm overflow-hidden" style={{ backgroundColor: '#2b3137' }}>
           {BUY_BOX_ROWS.map(([dim, target]) => (
-            <div key={dim} className="grid grid-cols-[140px_1fr] gap-4 p-3" style={{ backgroundColor: '#15181b' }}>
+            <div key={dim} className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-1 sm:gap-4 p-3" style={{ backgroundColor: '#15181b' }}>
               <span className="text-xs font-semibold tracking-wide uppercase" style={{ color: '#df7d62' }}>{dim}</span>
               <span className="text-sm" style={{ color: '#ece7dd' }}>{target}</span>
             </div>

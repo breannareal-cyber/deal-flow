@@ -9,7 +9,7 @@ function StageButton({ label, active, onClick }: { label: string; active: boolea
   return (
     <button
       onClick={onClick}
-      className="eyebrow text-[11px] transition-colors"
+      className="eyebrow text-[11px] py-1 -my-1 transition-colors"
       style={{ color: active ? '#df7d62' : '#8b949b' }}
     >
       {active ? `✓ ${label}` : label}
@@ -111,7 +111,7 @@ export function ListingCard({ listing, stage = 'new', onStage }: Props) {
         </p>
       </Link>
 
-      <div className="flex items-center gap-5 px-6 pb-5 pt-1 border-t" style={{ borderColor: '#2b3137' }}>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 px-6 pb-5 pt-1 border-t" style={{ borderColor: '#2b3137' }}>
         {isMock ? (
           <span className="eyebrow text-[10px] px-2 py-0.5" style={{ color: '#6f9aa8', border: '1px solid #2b3137' }}>
             Sample
