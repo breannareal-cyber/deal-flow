@@ -62,7 +62,7 @@ type TypeFilter = 'all' | 'off_market' | 'listed';
 export function FeedClient({ listings }: { listings: ScoredListing[] }) {
   // Optimistic local stage overrides (server is source of truth on reload).
   const [stages, setStages] = useState<Record<string, Stage>>({});
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('listed');
   const [modal, setModal] = useState<ZoneKey | null>(null);
 
   const stageOf = (l: ScoredListing): Stage => stages[l.id] ?? 'new';
@@ -104,9 +104,9 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
   const nothing = zone1.length + zone2.length + zone3.length + unscored.length === 0;
 
   const filters: { key: TypeFilter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'off_market', label: 'Off-market' },
     { key: 'listed', label: 'Listed' },
+    { key: 'off_market', label: 'Off-market' },
+    { key: 'all', label: 'All' },
   ];
 
   return (
