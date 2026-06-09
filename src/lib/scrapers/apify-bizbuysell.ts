@@ -9,10 +9,9 @@ import { normalizeListing } from './normalize';
 
 async function runOnce(url: string): Promise<Record<string, unknown>[]> {
   const { token, actorId } = config.apify;
-  // Sync timeout 180s: a real run completes in ~60-90s, so a timeout here is
-  // unambiguous (not a slow success returning empty) — which keeps retry-on-empty
-  // from double-billing the same underlying run.
-  const endpoint = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=180`;
+  // Sync timeout 100s: normal runs complete in 60-90s; 100s gives a safe buffer
+  // while guaranteeing the scrape stage finishes well under the 300s function limit.
+  const endpoint = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=100`;
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
