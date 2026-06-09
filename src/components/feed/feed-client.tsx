@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import type { ScoredListing, Stage } from '@/lib/types';
-import { HIDDEN_STAGES } from '@/lib/types';
+import type { StoredListing } from '@/lib/storage';
+import { HIDDEN_STAGES, newestPull, isThisTide } from '@/lib/types';
 import { ListingCard } from './listing-card';
 import { ZoneModal, type ZoneKey } from './zone-modal';
 import { Reveal } from '@/components/nautical/reveal';
@@ -59,13 +60,17 @@ function ZoneHeader({
 
 type TypeFilter = 'all' | 'off_market' | 'listed';
 
-export function FeedClient({ listings }: { listings: ScoredListing[] }) {
-  // Optimistic local stage overrides (server is source of truth on reload).
+export function FeedClient({ listings }: { listings: StoredListing[] }) {
+  // Optimistic local stage overrides; fall back to the persisted stage so a deal
+  // marked on a previous visit still shows its disposition (and stays out / in the
+  // feed) on reload — the server is the source of truth.
   const [stages, setStages] = useState<Record<string, Stage>>({});
+  const [stars, setStars] = useState<Record<string, boolean>>({});
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('listed');
   const [modal, setModal] = useState<ZoneKey | null>(null);
 
-  const stageOf = (l: ScoredListing): Stage => stages[l.id] ?? 'new';
+  const stageOf = (l: StoredListing): Stage => stages[l.id] ?? l.stage ?? 'new';
+  const starOf = (l: StoredListing): boolean => stars[l.id] ?? l.starred ?? false;
 
   const handleStage = (id: string, stage: Stage) => {
     setStages((prev) => ({ ...prev, [id]: stage })); // optimistic
@@ -75,6 +80,18 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
       body: JSON.stringify({ stage }),
     }).catch(() => {});
   };
+
+  const handleStar = (id: string, starred: boolean) => {
+    setStars((prev) => ({ ...prev, [id]: starred })); // optimistic
+    fetch(`/api/listings/${id}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ starred }),
+    }).catch(() => {});
+  };
+
+  // Freshness: the newest scrape "tide". Cards from this run group above older ones.
+  const newestMs = newestPull(listings.map((l) => l.scrapedAt));
 
   // Hide locally-dismissed (passed/dead) candidates + apply the type filter.
   const visible = listings.filter((l) => {
@@ -91,15 +108,31 @@ export function FeedClient({ listings }: { listings: ScoredListing[] }) {
     .sort((a, b) => Number(matchesTerms(b, PREFERRED)) - Number(matchesTerms(a, PREFERRED))) // water/environmental first
     .slice(0, FRESH_MAX);
 
-  const cards = (items: ScoredListing[]) => (
-    <div className="flex flex-col gap-3">
-      {items.map((l, i) => (
-        <Reveal key={l.id} delay={Math.min(i, 4) * 50}>
-          <ListingCard listing={l} stage={stageOf(l)} onStage={handleStage} />
-        </Reveal>
-      ))}
-    </div>
+  const card = (l: StoredListing, i: number) => (
+    <Reveal key={l.id} delay={Math.min(i, 4) * 50}>
+      <ListingCard listing={l} stage={stageOf(l)} starred={starOf(l)} onStage={handleStage} onStar={handleStar} />
+    </Reveal>
   );
+
+  // Render a zone's cards newest-first, split by the current tide with a quiet
+  // "earlier catches" divider so a flood of fresh pulls reads at a glance.
+  const cards = (items: StoredListing[]) => {
+    const sorted = [...items].sort((a, b) => (b.scrapedAt > a.scrapedAt ? 1 : -1));
+    const fresh = sorted.filter((l) => isThisTide(l.scrapedAt, newestMs));
+    const earlier = sorted.filter((l) => !isThisTide(l.scrapedAt, newestMs));
+    return (
+      <div className="flex flex-col gap-3">
+        {fresh.map((l, i) => card(l, i))}
+        {fresh.length > 0 && earlier.length > 0 && (
+          <div className="flex items-center gap-2 mt-3 mb-1">
+            <p className="eyebrow text-[9px]" style={{ color: '#5a646b' }}>Earlier catches</p>
+            <div className="flex-1 border-t" style={{ borderColor: '#2b3137' }} />
+          </div>
+        )}
+        {earlier.map((l, i) => card(l, fresh.length + i))}
+      </div>
+    );
+  };
 
   const nothing = zone1.length + zone2.length + zone3.length + unscored.length === 0;
 
