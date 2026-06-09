@@ -5,7 +5,7 @@ import { FeedClient } from '@/components/feed/feed-client';
 import { AddCandidate } from '@/components/feed/add-candidate';
 import { SiteNav, SiteFooter } from '@/components/nautical/site-chrome';
 import { Medallion, Cloud, Seaplane, Waterline } from '@/components/nautical/illustrations';
-import type { ScoredListing } from '@/lib/types';
+import type { StoredListing } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,7 @@ const TODAY = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
 export default async function FeedPage() {
   const stored = await getStorage().getFeed();
   const usingReal = stored.length > 0;
-  const listings: ScoredListing[] = usingReal
+  const listings: StoredListing[] = usingReal
     ? stored
     : capabilities.showSampleData()
       ? MOCK_LISTINGS

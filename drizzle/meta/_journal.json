@@ -15,6 +15,13 @@
       "when": 1780879152131,
       "tag": "0001_pipeline_stage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780879152132,
+      "tag": "0002_add_starred",
+      "breakpoints": true
     }
   ]
 }

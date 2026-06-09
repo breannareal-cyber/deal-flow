@@ -9,6 +9,7 @@ import * as neonStore from './neon-store';
 
 export type StoredListing = ScoredListing & {
   stage?: Stage;
+  starred?: boolean; // favorite flag, orthogonal to stage
   retryCount?: number; // failed scoring/research attempts; retryable until MAX_RETRIES
 };
 
@@ -20,11 +21,14 @@ export interface Storage {
   setStatus(listingId: string, status: PipelineStatus): Promise<void>;
   recordFailure(listingId: string): Promise<void>;
   getFeed(): Promise<StoredListing[]>;
+  // Deals that belong in The Hold: starred OR marked Researched / Contacted / Pass.
+  getSaved(): Promise<StoredListing[]>;
   getById(id: string): Promise<StoredListing | null>;
   // All ids ever stored (optionally filtered by id prefix, e.g. 'co-sos-'). Lets the
   // off-market source cap at N NEW per run and never re-surface a dismissed candidate.
   getExistingIds(prefix?: string): Promise<Set<string>>;
   setStage(id: string, stage: Stage): Promise<void>;
+  setStar(id: string, starred: boolean): Promise<void>;
   count(): Promise<number>;
 }
 

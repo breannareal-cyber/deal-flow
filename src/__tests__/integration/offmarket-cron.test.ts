@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { runOffMarketScrape } from '@/lib/pipeline';
 import type { Storage, StoredListing } from '@/lib/storage';
 import type { ScoredListing, Score, Listing } from '@/lib/types';
+import { savedDeals } from '@/lib/feed-filter';
 
 // In-memory storage (boundary stub) implementing the full interface.
 function memStore(): Storage & { all: () => StoredListing[] } {
@@ -23,7 +24,9 @@ function memStore(): Storage & { all: () => StoredListing[] } {
     async saveResearch() {},
     async recordFailure() {},
     async getFeed() { return []; },
+    async getSaved() { return savedDeals([...db.values()]); },
     async setStage() {},
+    async setStar() {},
     async count() { return db.size; },
   } as Storage & { all: () => StoredListing[] };
 }

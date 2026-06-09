@@ -5,6 +5,7 @@ import {
   integer,
   timestamp,
   jsonb,
+  boolean,
   unique,
 } from 'drizzle-orm/pg-core';
 import type { Listing, Score, Research } from '@/lib/types';
@@ -57,6 +58,7 @@ export const listings = pgTable('listings', {
   duplicateOf: text('duplicate_of'), // self-ref to listings.id; loose (no FK), matches JSON store
   retryCount: integer('retry_count').notNull().default(0),
   stage: stageEnum('stage').notNull().default('new'), // user disposition through the pipeline
+  starred: boolean('starred').notNull().default(false), // favorite flag, orthogonal to stage
   data: jsonb('data').$type<Listing>().notNull(),
 }, (t) => [
   unique().on(t.source, t.externalId),

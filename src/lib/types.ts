@@ -121,3 +121,25 @@ export function listingAge(yearEstablished: number | null): string {
   const age = 2026 - yearEstablished;
   return age > 0 ? `${age} yrs` : 'New';
 }
+
+// How long ago a listing was scraped — the freshness signal for the feed. Relative
+// and humanized ("pulled 2d ago") so a flood of new businesses reads at a glance.
+export function pullAge(scrapedAt: string, now: Date = new Date()): string {
+  const ms = now.getTime() - new Date(scrapedAt).getTime();
+  if (Number.isNaN(ms)) return '';
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours < 1) return 'pulled <1h ago';
+  if (hours < 24) return `pulled ${hours}h ago`;
+  return `pulled ${Math.floor(hours / 24)}d ago`;
+}
+
+// The most recent scrape "tide": listings pulled within an hour of the newest one.
+// Lets the UI separate "this tide" from "earlier catches" when the feed floods.
+export function newestPull(scrapedAts: string[]): number {
+  return scrapedAts.reduce((max, s) => Math.max(max, new Date(s).getTime() || 0), 0);
+}
+
+export function isThisTide(scrapedAt: string, newestMs: number): boolean {
+  const t = new Date(scrapedAt).getTime();
+  return !Number.isNaN(t) && t >= newestMs - 3_600_000;
+}

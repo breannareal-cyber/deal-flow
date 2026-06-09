@@ -7,11 +7,12 @@
 // rowToStoredListing). Writes use neon-http single statements (no multi-statement
 // transactions needed).
 
-import { eq, and, isNull, desc, like, notInArray, count as countRows } from 'drizzle-orm';
+import { eq, and, or, isNull, desc, like, notInArray, inArray, count as countRows } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { listings, scores, research } from '@/db/schema';
 import type { Listing, ScoredListing, Score, Research, PipelineStatus, Stage } from '@/lib/types';
 import { HIDDEN_STAGES } from '@/lib/types';
+import { SAVED_STAGES } from '@/lib/feed-filter';
 import type { StoredListing } from './index';
 
 // --- Row → domain mapping (pure, unit-tested) ---
@@ -26,6 +27,7 @@ export type JoinedRow = {
     duplicateOf: string | null;
     retryCount: number;
     stage: Stage;
+    starred: boolean;
     data: Listing;
   };
   scores: { listingId: string; verdict: Score['verdict']; data: Score; scoredAt: Date } | null;
@@ -47,6 +49,7 @@ export function rowToStoredListing(row: JoinedRow): StoredListing {
     score: row.scores?.data ?? null,
     research: row.research?.data ?? null,
     stage: l.stage ?? 'new',
+    starred: l.starred ?? false,
     retryCount: l.retryCount,
   };
 }
@@ -150,6 +153,18 @@ export async function getFeed(): Promise<StoredListing[]> {
   return (rows as JoinedRow[]).map(rowToStoredListing);
 }
 
+export async function getSaved(): Promise<StoredListing[]> {
+  const rows = await joinAll()
+    .where(
+      and(
+        isNull(listings.duplicateOf),
+        or(eq(listings.starred, true), inArray(listings.stage, [...SAVED_STAGES])),
+      ),
+    )
+    .orderBy(desc(listings.scrapedAt));
+  return (rows as JoinedRow[]).map(rowToStoredListing);
+}
+
 export async function getById(id: string): Promise<StoredListing | null> {
   const rows = await joinAll().where(eq(listings.id, id)).limit(1);
   const row = (rows as JoinedRow[])[0];
@@ -165,6 +180,10 @@ export async function getExistingIds(prefix?: string): Promise<Set<string>> {
 
 export async function setStage(id: string, stage: Stage): Promise<void> {
   await db.update(listings).set({ stage }).where(eq(listings.id, id));
+}
+
+export async function setStar(id: string, starred: boolean): Promise<void> {
+  await db.update(listings).set({ starred }).where(eq(listings.id, id));
 }
 
 export async function count(): Promise<number> {

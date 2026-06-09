@@ -73,6 +73,7 @@ function row(over: Partial<JoinedRow['listings']> = {}, score: Score | null = nu
       duplicateOf: null,
       retryCount: 0,
       stage: 'new',
+      starred: false,
       data: listingData(),
       ...over,
     },
