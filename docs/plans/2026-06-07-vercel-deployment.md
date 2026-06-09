@@ -70,7 +70,28 @@ This app runs fine on localhost but **cannot run on Vercel as-is.** One hard blo
 - ✅ Task 3 — Consolidated cron `src/app/api/cron/pipeline/route.ts`; `vercel.json` → 1 cron.
 - ✅ Task 4 — Read pages confirmed dynamic; clean `next build`; `.env.local.example` force-added.
 
-**Phase B & C — NOT STARTED** (gated on Breanna — requires her GitHub/Vercel accounts + API keys + explicit go-ahead per draft-never-send rule).
+**Phase B — MOSTLY DONE ✅** (2026-06-07)
+- ✅ Task 5 — GitHub: pushed to https://github.com/breannareal-cyber/deal-flow (`main`).
+- ✅ Task 6 — Vercel project `deal-flow` linked; Neon Marketplace integration `neon-cerulean-candle` provisioned + connected; `DATABASE_URL` set across Production/Preview/Development.
+- ✅ Task 7 — Migration applied to production Neon (`listings`/`scores`/`research` + enums live).
+- ✅ `CRON_SECRET` set in Production.
+- ✅ First production deploy LIVE: **https://deal-flow-zeta.vercel.app** (read path verified: `/api/listings` → `[]` from Neon, homepage HTTP 200).
+- ⚠️ Task 8 — BLOCKED on API keys: `ANTHROPIC_API_KEY`, `APIFY_TOKEN` (required for scrape/score), `TAVILY_API_KEY` (optional). **These were wiped from `.env.local` by the Neon `env pull` and must be re-supplied by Breanna** (values live in provider dashboards).
+- ⚠️ GitHub auto-deploy NOT connected — the Vercel GitHub App authorization is a browser step. CLI deploy works in the meantime.
+
+**Phase C — COMPLETE ✅** (2026-06-07)
+- ✅ `ANTHROPIC_API_KEY` + `APIFY_TOKEN` set in Vercel production; redeployed.
+- ✅ GitHub auto-deploy connected (pushes to `main` now deploy automatically).
+- ✅ Write path verified: production pipeline trigger scraped 35 (bizbuysell 18 + craigslist 17), scored 15, all landed in Neon. Feed returns them with correct zones (1 CRITERIA_MATCH, 3 SPEND_OUTSIDE_WATER, 11 EXCLUDE). No DB errors.
+- ➡️ 20 listings remain `scraped` (SCORE_BATCH=15/run by design) — they score on the next cron run, or a manual re-trigger.
+
+**DEPLOYMENT COMPLETE.** Live: https://deal-flow-zeta.vercel.app · cron `/api/cron/pipeline` every other day 12:00 UTC.
+
+### 🔐 Follow-up for Breanna
+Both `ANTHROPIC_API_KEY` and `APIFY_TOKEN` were pasted into chat → recommend rotating both (generate new, delete old) in the Anthropic Console + Apify dashboard, then update Vercel (`vercel env rm` + `add`) and `.env.local`.
+
+### ⚠️ Incident note
+Adding the Neon integration triggered an automatic `vercel env pull` that **overwrote `.env.local`**, wiping local API keys. No backup existed (file was gitignored). Lesson for next time: pull Marketplace env to a throwaway file (`--environment` to a temp path), never let it target `.env.local` when that file holds local-only secrets.
 
 ## Tasks (in order)
 
