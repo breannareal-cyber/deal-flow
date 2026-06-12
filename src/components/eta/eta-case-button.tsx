@@ -99,15 +99,19 @@ export function ETACaseButton() {
 
   const handleClose = useCallback(() => setOpen(false), []);
 
-  const handleAdvance = useCallback(async () => {
+  const navigate = useCallback(async (direction: 'next' | 'prev') => {
     setAdvancing(true);
     setRevealed(false);
     try {
-      const res = await fetch('/api/eta/advance', { method: 'POST' });
+      const res = await fetch('/api/eta/advance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction }),
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await fetchCase();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to advance');
+      setError(e instanceof Error ? e.message : 'Failed to navigate');
     } finally {
       setAdvancing(false);
     }
@@ -285,16 +289,26 @@ export function ETACaseButton() {
         {/* Footer — next case */}
         {c && !loading && (
           <div
-            className="shrink-0 px-6 py-4"
+            className="shrink-0 px-6 py-4 flex gap-3"
             style={{ borderTop: '1px solid #2b3137' }}
           >
             <button
-              onClick={handleAdvance}
+              onClick={() => navigate('prev')}
               disabled={advancing}
-              className="w-full eyebrow text-[11px] py-3 transition-colors hover:bg-[#1c2024] disabled:opacity-40"
+              className="flex-1 eyebrow text-[11px] py-3 transition-colors hover:bg-[#1c2024] disabled:opacity-40"
               style={{ backgroundColor: '#0e1011', color: '#8b949b', border: '1px solid #2b3137' }}
+              aria-label="Previous case"
             >
-              {advancing ? 'Loading next…' : 'Next Case →'}
+              ← Prev
+            </button>
+            <button
+              onClick={() => navigate('next')}
+              disabled={advancing}
+              className="flex-1 eyebrow text-[11px] py-3 transition-colors hover:bg-[#1c2024] disabled:opacity-40"
+              style={{ backgroundColor: '#0e1011', color: '#8b949b', border: '1px solid #2b3137' }}
+              aria-label="Next case"
+            >
+              {advancing ? '…' : 'Next →'}
             </button>
           </div>
         )}

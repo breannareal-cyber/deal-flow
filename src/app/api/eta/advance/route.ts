@@ -6,38 +6,63 @@ import { etaCases, etaProgress } from '@/db/schema';
 export const dynamic = 'force-dynamic';
 
 // POST /api/eta/advance
-// Increments currentCase to the next available case number, wrapping around.
-export async function POST() {
+// Moves to the next or previous case, wrapping at both ends.
+// Body: { direction?: 'next' | 'prev' } — defaults to 'next'.
+export async function POST(req: Request) {
+  const body = (await req.json().catch(() => ({}))) as { direction?: string };
+  const direction = body.direction === 'prev' ? 'prev' : 'next';
+
   const [progress] = await db.select().from(etaProgress).where(eq(etaProgress.id, 1));
   if (!progress) {
     return NextResponse.json({ error: 'Progress not initialized — call GET /api/eta/case first' }, { status: 400 });
   }
 
-  // Find the next case number greater than current; wrap to the lowest if none.
-  const [next] = await db
-    .select({ caseNumber: etaCases.caseNumber })
-    .from(etaCases)
-    .where(sql`${etaCases.caseNumber} > ${progress.currentCase}`)
-    .orderBy(etaCases.caseNumber)
-    .limit(1);
+  let targetCase: number;
 
-  let nextCase: number;
-  if (next) {
-    nextCase = next.caseNumber;
-  } else {
-    // Wrap: find the lowest case number.
-    const [first] = await db
+  if (direction === 'next') {
+    const [next] = await db
       .select({ caseNumber: etaCases.caseNumber })
       .from(etaCases)
+      .where(sql`${etaCases.caseNumber} > ${progress.currentCase}`)
       .orderBy(etaCases.caseNumber)
       .limit(1);
-    nextCase = first?.caseNumber ?? 1;
+
+    if (next) {
+      targetCase = next.caseNumber;
+    } else {
+      // Wrap to the lowest case.
+      const [first] = await db
+        .select({ caseNumber: etaCases.caseNumber })
+        .from(etaCases)
+        .orderBy(etaCases.caseNumber)
+        .limit(1);
+      targetCase = first?.caseNumber ?? 1;
+    }
+  } else {
+    const [prev] = await db
+      .select({ caseNumber: etaCases.caseNumber })
+      .from(etaCases)
+      .where(sql`${etaCases.caseNumber} < ${progress.currentCase}`)
+      .orderBy(sql`${etaCases.caseNumber} desc`)
+      .limit(1);
+
+    if (prev) {
+      targetCase = prev.caseNumber;
+    } else {
+      // Wrap to the highest case.
+      const [last] = await db
+        .select({ caseNumber: etaCases.caseNumber })
+        .from(etaCases)
+        .orderBy(sql`${etaCases.caseNumber} desc`)
+        .limit(1);
+      targetCase = last?.caseNumber ?? 1;
+    }
   }
 
   await db
     .update(etaProgress)
-    .set({ currentCase: nextCase, updatedAt: new Date() })
+    .set({ currentCase: targetCase, updatedAt: new Date() })
     .where(eq(etaProgress.id, 1));
 
-  return NextResponse.json({ currentCase: nextCase });
+  return NextResponse.json({ currentCase: targetCase });
 }
