@@ -5,6 +5,8 @@ import { FeedClient } from '@/components/feed/feed-client';
 import { AddCandidate } from '@/components/feed/add-candidate';
 import { SiteNav, SiteFooter } from '@/components/nautical/site-chrome';
 import { Medallion, Cloud, Seaplane, Waterline } from '@/components/nautical/illustrations';
+import { ETACaseButton } from '@/components/eta/eta-case-button';
+import Link from 'next/link';
 import type { StoredListing } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +30,18 @@ export default async function FeedPage() {
     <div className="min-h-screen">
       {/* ════════ POSTER HERO (overcast sky) ════════ */}
       <header className="relative overflow-hidden">
-        <SiteNav />
+        <SiteNav right={
+          <div className="flex items-center gap-3">
+            <ETACaseButton />
+            <Link
+              href="/saved"
+              className="eyebrow text-[11px] px-5 py-2.5 transition-colors hover:bg-[#df7d62]"
+              style={{ backgroundColor: '#0e1011', color: '#f0ebe1' }}
+            >
+              The Hold
+            </Link>
+          </div>
+        } />
 
         {/* sky decoration */}
         <Cloud className="pointer-events-none absolute top-24 left-[8%] w-28 drift" />
