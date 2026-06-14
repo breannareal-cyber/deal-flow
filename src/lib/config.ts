@@ -29,15 +29,18 @@ export const config = {
     // How many already-stored (un-enriched) candidates to re-enrich per backfill run.
     backfill: Number(process.env.OFFMARKET_BACKFILL ?? 10),
   },
-  // BizBuySell: keyword search is broken in the actor, but STATE filtering works.
-  // So we scrape state category pages (CO + Mountain West) and filter to water/
-  // environmental in-code via the keyword pre-filter below. Claude then does the
-  // real semantic classification (catches e.g. a water-meter manufacturer whose
-  // title has no water keyword).
+  // BizBuySell: the actor's keyword search is broken, but any listing-GRID URL works
+  // as a startUrl. So we scrape:
+  //  1. The NATIONAL water-industry category — water businesses are rare and often
+  //     national/remote-manageable (e.g. a water-meter/AMI/SCADA hardware maker that
+  //     never appears on a CO/WY state page). This is the bullseye net.
+  //  2. CO + WY state pages — for local IN-SPEND, non-water Zone-3 candidates.
+  // Each result is still filtered to water in-code (keyword pre-filter) and Claude
+  // does the real semantic classification downstream.
   bizbuysell: {
-    // Colorado (bullseye) + Wyoming. Two states keeps each run fast and cheap.
-    stateUrls: (process.env.BIZBUYSELL_STATE_URLS ??
+    startUrls: (process.env.BIZBUYSELL_STATE_URLS ??
       [
+        'https://www.bizbuysell.com/water-businesses-and-stores-for-sale/',
         'https://www.bizbuysell.com/colorado-businesses-for-sale/',
         'https://www.bizbuysell.com/wyoming-businesses-for-sale/',
       ].join(','))
