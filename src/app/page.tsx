@@ -4,7 +4,7 @@ import { capabilities } from '@/lib/config';
 import { FeedClient } from '@/components/feed/feed-client';
 import { AddCandidate } from '@/components/feed/add-candidate';
 import { SiteNav, SiteFooter } from '@/components/nautical/site-chrome';
-import { Medallion, Cloud, Seaplane, Waterline } from '@/components/nautical/illustrations';
+import { Cloud, Waterline } from '@/components/nautical/illustrations';
 import { ETACaseButton } from '@/components/eta/eta-case-button';
 import Link from 'next/link';
 import type { StoredListing } from '@/lib/storage';
@@ -44,22 +44,21 @@ export default async function FeedPage() {
         } />
 
         {/* sky decoration */}
-        <Cloud className="pointer-events-none absolute top-24 left-[8%] w-28 drift" />
-        <Cloud className="pointer-events-none absolute top-16 right-[26%] w-20 drift hidden sm:block" style={{ animationDelay: '-9s' }} />
-        <Cloud className="pointer-events-none absolute top-40 left-[40%] w-16 drift hidden md:block" style={{ animationDelay: '-15s' }} />
-        <Seaplane className="pointer-events-none absolute top-24 right-[10%] w-20 drift hidden sm:block" style={{ animationDelay: '-5s' }} />
+        <Cloud className="pointer-events-none absolute top-16 left-[8%] w-24 drift" />
+        <Cloud className="pointer-events-none absolute top-8 right-[26%] w-20 drift hidden sm:block" style={{ animationDelay: '-9s' }} />
+        <Cloud className="pointer-events-none absolute top-4 left-[55%] w-16 drift hidden md:block" style={{ animationDelay: '-15s' }} />
 
-        <div className="relative max-w-5xl mx-auto px-6 sm:px-10 pt-8 pb-4 grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
+        <div className="relative max-w-5xl mx-auto px-6 sm:px-10 pt-0 pb-3">
           <div>
-            <p className="eyebrow text-[11px] mb-4" style={{ color: '#2f3b41' }}>{TODAY}</p>
-            <h1 className="display text-[clamp(2.75rem,7vw,4.75rem)]" style={{ color: '#0e1011' }}>
-              Today&rsquo;s<br />Pipeline
+            <p className="eyebrow text-[11px] mb-1.5" style={{ color: '#2f3b41' }}>{TODAY}</p>
+            <h1 className="display text-[clamp(1.6rem,3.6vw,2.4rem)] leading-[0.95]" style={{ color: '#0e1011' }}>
+              Today&rsquo;s Pipeline
             </h1>
-            <p className="mt-5 text-[0.95rem] leading-relaxed max-w-md" style={{ color: '#2f3b41' }}>
+            <p className="mt-2.5 text-[0.9rem] leading-relaxed max-w-md" style={{ color: '#2f3b41' }}>
               Charting the waters for businesses worth acquiring. Every catch scored against the buy box,
               sorted by how close it swims to the bullseye.
             </p>
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 eyebrow text-[11px]" style={{ color: '#14181b' }}>
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 eyebrow text-[11px]" style={{ color: '#14181b' }}>
               <span className="inline-flex items-center gap-2"><Dot c="#df7d62" />{inCriteria} in criteria</span>
               <span className="inline-flex items-center gap-2"><Dot c="#6f9aa8" />{waterOutside} water · outside spend</span>
               <span className="inline-flex items-center gap-2"><Dot c="#d4a24a" />{spendOutside} wildcard</span>
@@ -71,14 +70,9 @@ export default async function FeedPage() {
               </p>
             )}
           </div>
-
-          <div className="flex justify-center lg:justify-end">
-            <Medallion className="w-[min(78vw,340px)] bob" />
-          </div>
         </div>
 
-        <div className="h-10 sm:h-16" />
-        <Waterline className="block w-full h-12 sm:h-14 -mb-px" />
+        <Waterline className="block w-full h-10 sm:h-12 -mb-px" />
       </header>
 
       {/* ════════ GROUND BAND (ink — where the data lives) ════════ */}

@@ -64,6 +64,13 @@ export function ListingCard({ listing, stage = 'new', starred = false, onStage, 
     manual: 'Added by you',
   } as Record<string, string>)[listing.source] ?? listing.source;
   const hasSourceLink = !isMock && !!listing.listingUrl && listing.listingUrl !== '#';
+  // Web-enrichment signals (off-market only): the blurb is the "what they do" the
+  // registry can't give; website is the resolved official site.
+  const blurb = listing.businessDescription ?? null;
+  const website = listing.website ?? null;
+  const enrichmentRan = isOffMarket && (!!blurb || !!listing.enrichmentSector);
+  const noSiteFound = enrichmentRan && !website;
+  const siteUnverified = !!website && listing.websiteConfidence === 'low';
   const summary = scored
     ? listing.score!.summary
     : listing.description?.slice(0, 160) ?? `Newly scraped from ${listing.source}. Awaiting buy-box scoring.`;
@@ -119,6 +126,11 @@ export function ListingCard({ listing, stage = 'new', starred = false, onStage, 
                 Off-market
               </span>
             )}
+            {noSiteFound && (
+              <span className="eyebrow text-[9px] px-2 py-0.5" style={{ color: '#8b949b', border: '1px solid #2b3137' }} title="No website found — judge manually">
+                No site found
+              </span>
+            )}
           </div>
           <span className="figure text-xs" style={{ color: '#8b949b' }}>{listing.location ?? '—'}</span>
         </div>
@@ -156,6 +168,11 @@ export function ListingCard({ listing, stage = 'new', starred = false, onStage, 
           </div>
         )}
 
+        {blurb && (
+          // The web-resolved "what they do" — the signal the registry never had.
+          <p className="text-sm leading-relaxed" style={{ color: '#ece7dd' }}>{blurb}</p>
+        )}
+
         <p className="text-sm leading-relaxed pb-1" style={{ color: '#b6bcc2' }}>
           &ldquo;{summary}&rdquo;
         </p>
@@ -178,6 +195,18 @@ export function ListingCard({ listing, stage = 'new', starred = false, onStage, 
           </a>
         ) : (
           <span className="eyebrow text-[11px]" style={{ color: '#8b949b' }}>via {sourceLabel}</span>
+        )}
+        {website && (
+          <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="eyebrow text-[11px] transition-colors hover:text-[#df7d62]"
+            style={{ color: siteUnverified ? '#8b949b' : '#6f9aa8' }}
+            title={siteUnverified ? 'Resolved by search — verify this is the right company' : 'Official website'}
+          >
+            {siteUnverified ? 'site (unverified) ↗' : 'website ↗'}
+          </a>
         )}
         {/* Freshness signal — when the deal was pulled. */}
         <span className="figure text-[10px]" style={{ color: '#5a646b' }}>{pullAge(listing.scrapedAt)}</span>

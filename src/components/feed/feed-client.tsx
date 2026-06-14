@@ -94,8 +94,11 @@ export function FeedClient({ listings }: { listings: StoredListing[] }) {
   const newestMs = newestPull(listings.map((l) => l.scrapedAt));
 
   // Hide locally-dismissed (passed/dead) candidates + apply the type filter.
+  // Also suppress drilling companies entirely (product decision) — remove the
+  // matchesTerms(l, ['drill']) check to bring them back.
   const visible = listings.filter((l) => {
     if (HIDDEN_STAGES.includes(stageOf(l))) return false;
+    if (matchesTerms(l, ['drill'])) return false;
     if (typeFilter !== 'all' && l.listingType !== typeFilter) return false;
     return true;
   });

@@ -51,6 +51,17 @@ function modernizationScore(listing: Listing, nowYear: number): number {
 }
 
 function sectorFitScore(listing: Listing): number {
+  // A web-resolved sector is the authoritative signal: it knows what the business
+  // ACTUALLY does, so it overrides the name token (e.g. "DRILLING" that is really
+  // foundation, not water). Only set to a trusted value at high confidence; 'unknown'
+  // / null falls through to the name/keyword path below. (resolveWebsite already
+  // downgrades low-confidence sectors to 'unknown', so we never trust a guess here.)
+  switch (listing.enrichmentSector) {
+    case 'water': return 5;
+    case 'water_adjacent': return 3;
+    case 'not_water': return 1;
+    // 'unknown' / null → name-based fallback
+  }
   const text = `${listing.title} ${listing.sector ?? ''} ${listing.description ?? ''}`;
   if (wordHit(text, BULLSEYE)) return 5;
   if (wordHit(text, ADJACENT)) return 3;

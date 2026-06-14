@@ -3,7 +3,7 @@
 
 import { capabilities, config, matchesWaterFilter } from './config';
 import { scrapeAllSources, enabledSources } from './scrapers/sources';
-import { fetchOffMarketCandidates } from './scrapers/sources/colorado-offmarket';
+import { fetchOffMarketCandidates, rotatingOrderDir } from './scrapers/sources/colorado-offmarket';
 import { scoreListing } from './scoring/score-listing';
 import { scoreOffMarket } from './scoring/score-offmarket';
 import { enrichOffMarket } from './enrichment';
@@ -161,7 +161,12 @@ export async function runOffMarketScrape(deps: {
   const existingIds = await storage.getExistingIds('co-sos-');
   let candidates;
   try {
-    candidates = await fetchOffMarketCandidates({ limit: config.offmarket.batch, existingIds, fetchFn: deps.fetchFn });
+    candidates = await fetchOffMarketCandidates({
+      limit: config.offmarket.batch,
+      existingIds,
+      fetchFn: deps.fetchFn,
+      orderDir: rotatingOrderDir(new Date()), // alternate ends each run to break oldest-first monotony
+    });
   } catch (e) {
     return { scraped: 0, added: 0, scored: 0, errors: [`offmarket fetch: ${(e as Error).message}`] };
   }
