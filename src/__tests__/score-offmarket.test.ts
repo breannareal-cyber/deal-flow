@@ -78,4 +78,44 @@ describe('scoreOffMarket', () => {
     expect(s.offMarket!.dimensions.sectorFit).toBeLessThanOrEqual(2);
     expect(s.zone).not.toBe('CRITERIA_MATCH');
   });
+
+  // --- Web-enriched sector overrides the name-token guess (Task 4) ---
+
+  it('demotes a name false-positive when enrichment says not_water (Elco case)', () => {
+    // Name "DRILLING" alone would hit BULLSEYE → sectorFit 5. The web-resolved sector
+    // says it is foundation drilling, not water → must be demoted.
+    const s = scoreOffMarket(
+      candidate({ title: 'ELCO DRILLING CO., INC.', enrichmentSector: 'not_water' }),
+      NOW
+    );
+    expect(s.offMarket!.dimensions.sectorFit).toBe(1);
+    expect(s.zone).toBe('EXCLUDE');
+    expect(s.verdict).toBe('PASS');
+  });
+
+  it('promotes a generic-named business when enrichment confirms water', () => {
+    // No water token in the name; the registry alone would score it low.
+    const s = scoreOffMarket(
+      candidate({ title: 'JOHNSON & SONS LLC', enrichmentSector: 'water' }),
+      NOW
+    );
+    expect(s.offMarket!.dimensions.sectorFit).toBe(5);
+    expect(s.zone).toBe('CRITERIA_MATCH');
+  });
+
+  it('water_adjacent enrichment scores a middling sector fit', () => {
+    const s = scoreOffMarket(
+      candidate({ title: 'FRONT RANGE SERVICES LLC', enrichmentSector: 'water_adjacent' }),
+      NOW
+    );
+    expect(s.offMarket!.dimensions.sectorFit).toBe(3);
+  });
+
+  it("falls back to the name path when enrichment sector is unknown/absent", () => {
+    const enriched = scoreOffMarket(candidate({ enrichmentSector: 'unknown' }), NOW);
+    const plain = scoreOffMarket(candidate(), NOW);
+    // "TRUE PUMP & WELL SERVICE" still scores on its name tokens, unchanged.
+    expect(enriched.offMarket!.dimensions.sectorFit).toBe(plain.offMarket!.dimensions.sectorFit);
+    expect(enriched.offMarket!.dimensions.sectorFit).toBeGreaterThanOrEqual(4);
+  });
 });

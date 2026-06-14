@@ -155,4 +155,67 @@ export const MOCK_LISTINGS: ScoredListing[] = [
       webFindings: [],
     }
   ),
+  // Off-market, web-enriched: resolved website + blurb + sector (the Task 6 happy path).
+  mock(
+    'mock-offmarket-enriched',
+    {
+      listingType: 'off_market',
+      source: 'co-sos',
+      title: 'JAMES DRILLING CO.',
+      location: 'Arvada, CO',
+      state: 'CO',
+      sector: 'DPC',
+      yearEstablished: 1957,
+      registeredAgent: 'James R. Johnson',
+      website: 'https://www.jamesdrilling.com/',
+      websiteConfidence: 'high',
+      businessDescription: 'Family-owned water-well drilling and complete well systems serving the Front Range since 1957; NGWA member, residential and commercial.',
+      enrichmentSector: 'water',
+      blurbSource: 'web_search',
+      siteLastUpdated: '2014-05-13',
+      listingUrl: 'https://www.sos.state.co.us/biz/BusinessEntityDetail.do?masterFileId=1957',
+      fieldSources: { website: 'enriched', businessDescription: 'enriched', enrichmentSector: 'enriched', siteLastUpdated: 'source' },
+    },
+    {
+      verdict: 'PURSUE',
+      zone: 'CRITERIA_MATCH',
+      summary: 'Multi-generational water-well driller, stale web presence — classic modernization upside with a real crew.',
+      scoreReasoning: 'Deterministic off-market score. Longevity 5/5, sector fit 5/5 (web-confirmed water), site stale since 2014.',
+      dealKillers: [],
+      fitFactors: [{ label: 'Sector fit', value: '5/5 (web-confirmed water)' }],
+      topQuestions: ['What is the actual SDE?', 'Who holds the well-drilling licenses?', 'Would the owner consider a sale?'],
+      offMarket: { dimensions: { longevity: 5, modernizationHeadroom: 5, sectorFit: 5, keyManRisk: 2, cashFlowResilience: 4, sellerMotivation: 5 }, weightedTotal: 4.4, upsideWithoutOwner: true },
+    },
+    null
+  ),
+  // Off-market, enrichment ran but no own domain (directory-only) — "No site found".
+  mock(
+    'mock-offmarket-nosite',
+    {
+      listingType: 'off_market',
+      source: 'co-sos',
+      title: 'WOODLAND PUMP AND SUPPLY CO.',
+      location: 'Florissant, CO',
+      state: 'CO',
+      sector: 'DPC',
+      yearEstablished: 1965,
+      website: null,
+      businessDescription: 'Complete local water-system source since 1964: pumps, cisterns, hand pumps, and solar systems.',
+      enrichmentSector: 'water',
+      blurbSource: 'web_search',
+      listingUrl: 'https://www.sos.state.co.us/biz/BusinessEntityDetail.do?masterFileId=1965',
+      fieldSources: { businessDescription: 'enriched', enrichmentSector: 'enriched' },
+    },
+    {
+      verdict: 'DIG_DEEPER',
+      zone: 'CRITERIA_MATCH',
+      summary: 'Long-running water-system shop with no web presence — phone-only, judge manually.',
+      scoreReasoning: 'Deterministic off-market score. Longevity 5/5, sector fit 5/5 (web-confirmed water).',
+      dealKillers: [],
+      fitFactors: [{ label: 'Sector fit', value: '5/5 (web-confirmed water)' }],
+      topQuestions: ['What is the actual SDE?', 'Is the owner ready to retire?', 'Is there a successor?'],
+      offMarket: { dimensions: { longevity: 5, modernizationHeadroom: 3, sectorFit: 5, keyManRisk: 3, cashFlowResilience: 4, sellerMotivation: 4 }, weightedTotal: 3.6, upsideWithoutOwner: false },
+    },
+    null
+  ),
 ];

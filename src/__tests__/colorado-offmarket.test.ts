@@ -3,6 +3,7 @@ import {
   fetchOffMarketCandidates,
   buildEntitiesQuery,
   offMarketSector,
+  rotatingOrderDir,
 } from '@/lib/scrapers/sources/colorado-offmarket';
 
 // Canned Socrata rows (real field names from the Task 0 spike).
@@ -81,35 +82,31 @@ describe('fetchOffMarketCandidates', () => {
     expect(out).toEqual([]);
   });
 
-  // Colorado's oldest water businesses are overwhelmingly drilling outfits, and the
-  // source pages oldest-first — so without a cap every batch was all drilling. The
-  // diversity pass caps each sub-sector (ceil(limit/4) = 1 at the default batch of 3)
-  // so well/utility/quality companies get a slot.
-  it('caps any one sub-sector so drilling cannot monopolize a batch', async () => {
+  // Drilling companies are excluded entirely (product decision) — even though
+  // water-well drilling is nominally the bullseye. They must never reach the batch.
+  it('excludes drilling companies entirely', async () => {
     const mixed = [
       { entityid: 'd1', entityname: 'JAMES DRILLING CO.', entityformdate: '1957-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
       { entityid: 'd2', entityname: 'ELCO DRILLING CO., INC.', entityformdate: '1961-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
-      { entityid: 'd3', entityname: 'CANFIELD DRILLING CO.', entityformdate: '1965-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
       { entityid: 'w1', entityname: 'YETTER WELL SERVICE, INC.', entityformdate: '1976-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
       { entityid: 't1', entityname: 'DELOACH\'S WATER CONDITIONING, INC.', entityformdate: '1977-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
     ];
     const out = await fetchOffMarketCandidates({ limit: 3, existingIds: new Set(), fetchFn: pagedFetch(mixed) });
-    expect(out).toHaveLength(3);
-    const sectors = out.map((l) => offMarketSector(l.title));
-    // At most one drilling slot, and the well + treatment companies both made the cut.
-    expect(sectors.filter((s) => s === 'drilling')).toHaveLength(1);
+    expect(out.map((l) => offMarketSector(l.title))).not.toContain('drilling');
     expect(out.map((l) => l.id)).toEqual(expect.arrayContaining(['co-sos-w1', 'co-sos-t1']));
+    // The drilling outfits are gone.
+    expect(out.map((l) => l.id)).not.toContain('co-sos-d1');
   });
 
   // When only one sub-sector is available, the batch must still fill to `limit`
   // (the diversity cap backfills rather than under-serving).
   it('backfills from the pool when diversity alone cannot fill the batch', async () => {
-    const allDrilling = [
-      { entityid: 'd1', entityname: 'JAMES DRILLING CO.', entityformdate: '1957-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
-      { entityid: 'd2', entityname: 'ELCO DRILLING CO., INC.', entityformdate: '1961-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
-      { entityid: 'd3', entityname: 'CANFIELD DRILLING CO.', entityformdate: '1965-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
+    const allPump = [
+      { entityid: 'p1', entityname: 'TRUE PUMP & EQUIPMENT, INC.', entityformdate: '1957-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
+      { entityid: 'p2', entityname: 'CULLUM PUMPING SERVICE, INC.', entityformdate: '1961-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
+      { entityid: 'p3', entityname: 'LIVING WATER PUMP SERVICE, INC.', entityformdate: '1965-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
     ];
-    const out = await fetchOffMarketCandidates({ limit: 3, existingIds: new Set(), fetchFn: pagedFetch(allDrilling) });
+    const out = await fetchOffMarketCandidates({ limit: 3, existingIds: new Set(), fetchFn: pagedFetch(allPump) });
     expect(out).toHaveLength(3);
   });
 
@@ -123,6 +120,55 @@ describe('fetchOffMarketCandidates', () => {
     ];
     const out = await fetchOffMarketCandidates({ limit: 5, existingIds: new Set(), fetchFn: pagedFetch(broadened) });
     expect(out.map((l) => l.id)).toEqual(expect.arrayContaining(['co-sos-q1', 'co-sos-e1', 'co-sos-u1']));
+  });
+});
+
+// Oldest-first every run surfaced the same antique drilling cohort ("same
+// businesses over and over"). The cron alternates sort direction by date parity so
+// later/more-diverse businesses also get airtime; dedup still prevents repeats.
+describe('rotating sort direction (anti-monotony)', () => {
+  // Order-aware Socrata stub: honors $order=entityformdate asc|desc like the real API.
+  function orderedFetch(rows: Record<string, unknown>[]): typeof fetch {
+    let served = false;
+    return (async (url: string) => {
+      if (served) return { ok: true, json: async () => [] };
+      served = true;
+      const desc = /entityformdate(%20|\s)desc/i.test(url);
+      const sorted = [...rows].sort((a, b) => {
+        const av = String(a.entityformdate), bv = String(b.entityformdate);
+        return desc ? bv.localeCompare(av) : av.localeCompare(bv);
+      });
+      return { ok: true, json: async () => sorted };
+    }) as unknown as typeof fetch;
+  }
+
+  const MIXED = [
+    { entityid: 'o1', entityname: 'YETTER WELL SERVICE, INC.', entityformdate: '1957-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
+    { entityid: 'o2', entityname: 'TRUE PUMP & EQUIPMENT, INC.', entityformdate: '1972-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
+    { entityid: 'n1', entityname: 'FRONT RANGE WATER QUALITY, INC.', entityformdate: '2015-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
+    { entityid: 'n2', entityname: 'GLACIER VIEW WATER SYSTEM', entityformdate: '2018-01-01', principalstate: 'CO', entitystatus: 'Good Standing' },
+  ];
+
+  it('asc surfaces the oldest, desc surfaces the newest (different cohorts)', async () => {
+    const asc = await fetchOffMarketCandidates({ limit: 2, existingIds: new Set(), fetchFn: orderedFetch(MIXED), orderDir: 'asc' });
+    const desc = await fetchOffMarketCandidates({ limit: 2, existingIds: new Set(), fetchFn: orderedFetch(MIXED), orderDir: 'desc' });
+    expect(asc.map((l) => l.id)).toEqual(expect.arrayContaining(['co-sos-o1']));
+    expect(desc.map((l) => l.id)).toEqual(expect.arrayContaining(['co-sos-n2']));
+    // The two runs are not the same set — monotony broken.
+    expect(asc.map((l) => l.id)).not.toEqual(desc.map((l) => l.id));
+  });
+
+  it('defaults to asc when no direction is given (back-compat)', async () => {
+    const out = await fetchOffMarketCandidates({ limit: 1, existingIds: new Set(), fetchFn: orderedFetch(MIXED) });
+    expect(out[0].id).toBe('co-sos-o1'); // oldest
+  });
+
+  it('rotatingOrderDir alternates on the every-other-day cron cadence', () => {
+    // Consecutive cron fire dates must not pick the same direction.
+    const d1 = rotatingOrderDir(new Date('2026-06-14T14:00:00Z'));
+    const d2 = rotatingOrderDir(new Date('2026-06-16T14:00:00Z'));
+    expect(d1).not.toBe(d2);
+    expect(['asc', 'desc']).toContain(d1);
   });
 });
 

@@ -47,9 +47,16 @@ describe('domainCreatedAt', () => {
 
 describe('enrichOffMarket', () => {
   const base = normalizeOffMarket({ entityid: '1', entityname: 'ACME PUMP CO' })!;
+  // No-website resolver: keeps the existing wayback/whois behavior under test and
+  // avoids the default resolver hitting the network.
+  const noWebsite = async () => ({
+    website: null, websiteConfidence: null, businessDescription: null,
+    enrichmentSector: 'unknown' as const, blurbSource: null,
+  });
 
   it('attaches staleness + domain age and records provenance', async () => {
     const enriched = await enrichOffMarket({ ...base, listingUrl: 'https://acme.com' }, {
+      website: noWebsite,
       wayback: async () => '2014-05-13',
       whois: async () => '1998-07-02',
     });
@@ -61,10 +68,84 @@ describe('enrichOffMarket', () => {
 
   it('leaves fields null when enrichment finds nothing (graceful)', async () => {
     const enriched = await enrichOffMarket({ ...base, listingUrl: 'https://acme.com' }, {
+      website: noWebsite,
       wayback: async () => null,
       whois: async () => null,
     });
     expect(enriched.siteLastUpdated).toBeNull();
     expect(enriched.domainCreatedAt).toBeNull();
+  });
+
+  it('resolves a website and probes THAT site (not the SOS URL), with enriched provenance', async () => {
+    // base.listingUrl is a synthetic SOS URL → probes would normally be skipped.
+    const probed: string[] = [];
+    const enriched = await enrichOffMarket(base, {
+      website: async () => ({
+        website: 'https://acme-pump.com', websiteConfidence: 'high',
+        businessDescription: 'Water-well pump sales and service since 1965.',
+        enrichmentSector: 'water', blurbSource: 'web_search',
+      }),
+      wayback: async (u) => { probed.push(u); return '2012-01-01'; },
+      whois: async (u) => { probed.push(u); return '1999-01-01'; },
+    });
+
+    expect(enriched.website).toBe('https://acme-pump.com');
+    expect(enriched.businessDescription).toMatch(/pump/i);
+    expect(enriched.enrichmentSector).toBe('water');
+    expect(enriched.siteLastUpdated).toBe('2012-01-01'); // probe ran against the resolved site
+    expect(probed.every((u) => u.includes('acme-pump.com'))).toBe(true);
+    expect(probed.some((u) => u.includes('sos.state.co.us'))).toBe(false);
+    expect(enriched.fieldSources?.website).toBe('enriched');
+    expect(enriched.fieldSources?.businessDescription).toBe('enriched');
+    expect(enriched.fieldSources?.enrichmentSector).toBe('enriched');
+  });
+
+  it('no website found but blurb present → keeps blurb/sector, skips probes (SOS URL)', async () => {
+    let probedCount = 0;
+    const enriched = await enrichOffMarket(base, {
+      website: async () => ({
+        website: null, websiteConfidence: null,
+        businessDescription: 'Phone-only legacy water-system shop since 1964.',
+        enrichmentSector: 'water', blurbSource: 'web_search',
+      }),
+      wayback: async () => { probedCount++; return '2000-01-01'; },
+      whois: async () => { probedCount++; return null; },
+    });
+
+    expect(enriched.website).toBeNull();
+    expect(enriched.businessDescription).toMatch(/legacy/i);
+    expect(enriched.enrichmentSector).toBe('water');
+    expect(enriched.siteLastUpdated).toBeNull(); // no probe target → no staleness
+    expect(probedCount).toBe(0);
+  });
+
+  it('is idempotent: already-enriched listing is not re-resolved (cost guard)', async () => {
+    let resolverCalls = 0;
+    const already = {
+      ...base,
+      website: 'https://acme-pump.com',
+      enrichmentSector: 'water' as const,
+      fieldSources: { ...base.fieldSources, website: 'enriched' as const },
+    };
+    const enriched = await enrichOffMarket(already, {
+      website: async () => { resolverCalls++; return {
+        website: null, websiteConfidence: null, businessDescription: null,
+        enrichmentSector: 'unknown' as const, blurbSource: null,
+      }; },
+      wayback: async () => { resolverCalls++; return null; },
+      whois: async () => { resolverCalls++; return null; },
+    });
+    expect(resolverCalls).toBe(0); // no search, no probes — nothing re-run
+    expect(enriched.website).toBe('https://acme-pump.com'); // existing enrichment preserved
+  });
+
+  it('website resolver throwing never sinks enrichment', async () => {
+    const enriched = await enrichOffMarket(base, {
+      website: async () => { throw new Error('resolver blew up'); },
+      wayback: async () => null,
+      whois: async () => null,
+    });
+    expect(enriched.id).toBe(base.id); // listing returned intact
+    expect(enriched.website ?? null).toBeNull();
   });
 });

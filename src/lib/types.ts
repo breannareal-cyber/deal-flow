@@ -33,8 +33,14 @@ export type ListingType = 'listed' | 'off_market';
 
 // Per-field provenance, so the UI/scorer never confuses an inferred value with a
 // confirmed one. 'source' = straight from a registry/listing; 'estimated' = derived
-// or weak proxy (e.g. formation date as age); 'confirmed' = verified in diligence.
-export type FieldSource = 'source' | 'estimated' | 'confirmed';
+// or weak proxy (e.g. formation date as age); 'confirmed' = verified in diligence;
+// 'enriched' = resolved by web-search enrichment (website/blurb/sector).
+export type FieldSource = 'source' | 'estimated' | 'confirmed' | 'enriched';
+
+// What the enrichment step decided the business actually does, from its web
+// presence — distinct from the registry name token. Lets the deterministic scorer
+// demote name false-positives (e.g. "DRILLING" that is foundation, not water).
+export type EnrichmentSector = 'water' | 'water_adjacent' | 'not_water' | 'unknown';
 
 // A listing as scraped + normalized (before scoring/research)
 export type Listing = {
@@ -69,6 +75,13 @@ export type Listing = {
   ownerFirstLicenseDate?: string | null; // reserved for a future DORA/DWR overlay
   domainCreatedAt?: string | null; // WHOIS/RDAP — business-age signal
   siteLastUpdated?: string | null; // Wayback last meaningful snapshot — staleness signal
+
+  // --- Web-search enrichment (off-market; null until enriched) ---
+  website?: string | null; // resolved official site (kept even if low-confidence, then flagged)
+  websiteConfidence?: 'high' | 'low' | null; // how sure the site belongs to THIS entity
+  businessDescription?: string | null; // 1–2 sentence "what they do" blurb
+  enrichmentSector?: EnrichmentSector | null; // web-derived sector; only trusted when high-confidence
+  blurbSource?: 'web_search' | 'site' | null; // where the blurb came from
   // Per-field provenance (e.g. { yearEstablished: 'estimated', registeredAgent: 'source' }).
   fieldSources?: Partial<Record<keyof Listing, FieldSource>> | null;
 };

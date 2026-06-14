@@ -37,7 +37,9 @@ const WATER_PHRASES = [
 ];
 // Negative terms: co-ops, government, and false-positive substrings. Belt-and-suspenders
 // alongside the phrase strategy above.
-const NEGATIVE = ['irrigation', 'ditch', 'canal', 'reservoir', 'district', 'mutual', 'association', 'concrete', 'pumpkin', 'church', 'water users', 'water company'];
+// NOTE: 'drill' excludes ALL drilling companies (incl. water-well drilling, normally
+// the bullseye) per explicit product decision — remove it to bring drillers back.
+const NEGATIVE = ['drill', 'irrigation', 'ditch', 'canal', 'reservoir', 'district', 'mutual', 'association', 'concrete', 'pumpkin', 'church', 'water users', 'water company'];
 
 // SQL-escape a term for a SoQL string literal.
 function lit(s: string): string {
@@ -89,7 +91,20 @@ export type FetchOpts = {
   limit: number;
   existingIds: Set<string>;
   fetchFn?: typeof fetch;
+  // Sort direction for the formation-date paging. The cron alternates it (see
+  // rotatingOrderDir) so it doesn't surface the same antique drilling cohort every
+  // run; dedup still guarantees nothing repeats. Defaults to oldest-first.
+  orderDir?: 'asc' | 'desc';
 };
+
+// Alternate sort direction across the every-other-day cron so consecutive runs draw
+// from opposite ends of the formation-date range (old established shops vs. newer,
+// more sector-diverse businesses). Fires are ~2 days apart, so we flip on each
+// 2-day step rather than on raw day parity (which would never change between fires).
+export function rotatingOrderDir(d: Date): 'asc' | 'desc' {
+  const epochDays = Math.floor(d.getTime() / 86_400_000);
+  return Math.floor(epochDays / 2) % 2 === 0 ? 'asc' : 'desc';
+}
 
 // Page the dataset (oldest first), filter to genuine water businesses, skip ids
 // already surfaced, and return up to `limit` brand-new off-market listings. Per-page
@@ -97,14 +112,16 @@ export type FetchOpts = {
 export async function fetchOffMarketCandidates(opts: FetchOpts): Promise<Listing[]> {
   const fetchFn = opts.fetchFn ?? fetch;
   const where = buildEntitiesQuery();
-  // Gather an eligible pool (oldest-first) across pages, then diversify by sub-sector
-  // before truncating to the batch limit — so one sector can't monopolize a run.
+  const orderDir = opts.orderDir ?? 'asc';
+  // Gather an eligible pool (by formation date, in orderDir) across pages, then
+  // diversify by sub-sector before truncating to the batch limit — so one sector
+  // can't monopolize a run.
   const pool: Listing[] = [];
 
   for (let page = 0; page < MAX_PAGES; page++) {
     const url =
       `${ENTITIES_URL}?$where=${encodeURIComponent(where)}` +
-      `&$order=entityformdate%20asc&$limit=${PAGE_SIZE}&$offset=${page * PAGE_SIZE}`;
+      `&$order=entityformdate%20${orderDir}&$limit=${PAGE_SIZE}&$offset=${page * PAGE_SIZE}`;
 
     let rows: Record<string, unknown>[] = [];
     try {
