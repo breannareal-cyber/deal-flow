@@ -86,7 +86,11 @@ You are given a business NAME, its registered CITY, and a list of web search hit
 Decide:
 1. website — the business's OWN official website URL if one clearly appears in the hits, else null. Directory/aggregator pages (yelp, bbb, yellowpages, facebook, manta, zoominfo) are NOT an official website — if only those appear, website is null.
 2. businessDescription — a neutral 1–2 sentence summary of what the business does, only if the hits are clearly about THIS business. Else null.
-3. enrichmentSector — what it actually does: "water" (well drilling, pumps, septic, water treatment/testing, water utility), "water_adjacent" (HVAC, plumbing, irrigation, general utility), "not_water" (foundation/oil drilling, churches, investment cos, anything off-thesis), or "unknown".
+3. enrichmentSector — what it actually does:
+   - "water" = an acquirable water SERVICE business: well drilling/service, pumps, septic/sewer service, water treatment/conditioning/filtration, water testing/quality labs.
+   - "water_adjacent" = HVAC, plumbing, irrigation, general utility contracting.
+   - "not_water" = anything off-thesis OR not an acquirable operating business — including foundation/oil drilling, churches, investment/holding cos, AND community water co-ops: subdivision / HOA / mutual / district water systems (these are member-owned utilities, not sellable companies).
+   - "unknown" if the hits don't make it clear.
 4. confidence — "high" if the hits clearly correspond to the named business in (or near) the given city; "low" if the city does not corroborate or the name is ambiguous across multiple businesses.
 
 Return ONLY valid JSON, no markdown:

@@ -26,6 +26,8 @@ export const config = {
   // Off-market sourcing: how many NEW candidates the scheduled scrub surfaces per run.
   offmarket: {
     batch: Number(process.env.OFFMARKET_BATCH ?? 3),
+    // How many already-stored (un-enriched) candidates to re-enrich per backfill run.
+    backfill: Number(process.env.OFFMARKET_BACKFILL ?? 10),
   },
   // BizBuySell: keyword search is broken in the actor, but STATE filtering works.
   // So we scrape state category pages (CO + Mountain West) and filter to water/
