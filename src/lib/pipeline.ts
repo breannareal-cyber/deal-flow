@@ -6,7 +6,7 @@ import { scrapeAllSources, enabledSources } from './scrapers/sources';
 import { fetchOffMarketCandidates, rotatingOrderDir } from './scrapers/sources/colorado-offmarket';
 import { scoreListing } from './scoring/score-listing';
 import { scoreOffMarket } from './scoring/score-offmarket';
-import { enrichOffMarket } from './enrichment';
+import { enrichOffMarket, isWebEnriched } from './enrichment';
 import { researchListing } from './research/synthesize';
 import { getStorage } from './storage';
 import type { ScoredListing } from './types';
@@ -188,4 +188,40 @@ export async function runOffMarketScrape(deps: {
   }
 
   return { scraped: candidates.length, added: candidates.length, scored, errors };
+}
+
+// Backfill: off-market listings scored BEFORE web enrichment existed have no
+// website/blurb/sector, so they were scored on name tokens alone (low precision —
+// subdivision water systems and foundation drillers slipped into CRITERIA_MATCH).
+// This re-enriches the un-enriched stored candidates and re-scores them so the new
+// signal takes effect. Bounded per run (Tavily + Claude per listing) and idempotent
+// (already-enriched listings are skipped), so it's safe to run repeatedly.
+export async function backfillOffMarketEnrichment(deps: {
+  storage?: ReturnType<typeof getStorage>;
+  enrich?: typeof enrichOffMarket;
+  limit?: number;
+} = {}): Promise<{ scanned: number; enriched: number; errors: string[] }> {
+  const storage = deps.storage ?? getStorage();
+  const enrich = deps.enrich ?? enrichOffMarket;
+  const limit = deps.limit ?? config.offmarket.backfill;
+  const errors: string[] = [];
+
+  const scored = await storage.getByStatus('scored');
+  const pending = scored.filter((l) => l.listingType === 'off_market' && !isWebEnriched(l)).slice(0, limit);
+
+  let enriched = 0;
+  for (const base of pending) {
+    try {
+      const e = await enrich(base);
+      await storage.upsertListings([{ ...e, score: base.score ?? null, research: base.research ?? null }]);
+      await storage.saveScore(e.id, scoreOffMarket(e));
+      await storage.setStatus(e.id, 'scored');
+      enriched++;
+    } catch (err) {
+      errors.push(`backfill ${base.id}: ${(err as Error).message}`);
+    }
+  }
+
+  console.log(`[offmarket-backfill] scanned ${pending.length}, enriched ${enriched}`);
+  return { scanned: pending.length, enriched, errors };
 }
