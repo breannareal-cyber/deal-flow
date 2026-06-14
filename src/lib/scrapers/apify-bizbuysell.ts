@@ -71,18 +71,18 @@ export async function scrapeBizBuySell(): Promise<Listing[]> {
 
   // Sequential by default — see note above. Override with BIZBUYSELL_CONCURRENCY.
   const concurrency = Number(process.env.BIZBUYSELL_CONCURRENCY ?? 1);
-  const urls = config.bizbuysell.stateUrls;
+  const urls = config.bizbuysell.startUrls;
   const perState = await withConcurrency(urls, concurrency, scrapeState);
 
-  // Surface per-state outcomes so a silently-empty/failed state can't hide again.
+  // Surface per-URL outcomes so a silently-empty/failed grid can't hide again.
   perState.forEach((r, i) => {
-    const state = urls[i].match(/\/([a-z-]+)-businesses/)?.[1] ?? urls[i];
+    const label = urls[i].match(/\/([a-z-]+)-businesses(?:-and-stores)?-for-sale/)?.[1] ?? urls[i];
     if (r.status === 'rejected') {
-      console.warn(`[scrape] ${state}: FAILED — ${r.reason?.message ?? r.reason}`);
+      console.warn(`[scrape] ${label}: FAILED — ${r.reason?.message ?? r.reason}`);
     } else if (r.value.length === 0) {
-      console.warn(`[scrape] ${state}: returned 0 listings (possible throttle/empty)`);
+      console.warn(`[scrape] ${label}: returned 0 listings (possible throttle/empty)`);
     } else {
-      console.log(`[scrape] ${state}: ${r.value.length} raw listings`);
+      console.log(`[scrape] ${label}: ${r.value.length} raw listings`);
     }
   });
 
@@ -90,17 +90,25 @@ export async function scrapeBizBuySell(): Promise<Listing[]> {
   // business — cap the candidate pool to keep scoring cheap and fast.
   const SPEND_CANDIDATE_CAP = Number(process.env.BIZBUYSELL_SPEND_CANDIDATES ?? 12);
 
+  // A water-INDUSTRY category page is itself the filter, so keep every result from it
+  // (the keyword pre-filter would wrongly drop e.g. a water-meter manufacturer whose
+  // TITLE has no water word). State pages still get the keyword filter.
+  const isWaterCategory = (u: string) => /water-businesses-and-stores-for-sale/.test(u);
+
   const seen = new Set<string>();
   const water: Listing[] = [];
   const spend: Listing[] = [];
-  for (const result of perState) {
+  for (let i = 0; i < perState.length; i++) {
+    const result = perState[i];
     if (result.status !== 'fulfilled') continue;
+    const fromWaterCategory = isWaterCategory(urls[i]);
     for (const row of result.value) {
       const listing = normalizeListing(row);
       if (!listing || seen.has(listing.id)) continue;
-      // Keep all water/environmental matches (Zones 1 & 2). Separately collect a
-      // capped pool of in-spend non-water businesses (Zone 3 candidates).
-      if (matchesWaterFilter(listing.title, listing.description)) {
+      // Keep all water/environmental matches (Zones 1 & 2) — and everything from a
+      // water-category grid. Separately collect a capped pool of in-spend non-water
+      // businesses (Zone 3 candidates).
+      if (fromWaterCategory || matchesWaterFilter(listing.title, listing.description)) {
         seen.add(listing.id);
         water.push(listing);
       } else if (inSpendRange(listing.ebitda, listing.cashFlow) && spend.length < SPEND_CANDIDATE_CAP) {
