@@ -5,7 +5,9 @@ import { FeedClient } from '@/components/feed/feed-client';
 import { AddCandidate } from '@/components/feed/add-candidate';
 import { SiteNav, SiteFooter } from '@/components/nautical/site-chrome';
 import { Cloud, Waterline } from '@/components/nautical/illustrations';
-import type { ScoredListing } from '@/lib/types';
+import { ETACaseButton } from '@/components/eta/eta-case-button';
+import Link from 'next/link';
+import type { StoredListing } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +16,7 @@ const TODAY = new Date().toLocaleDateString('en-US', { weekday: 'long', month: '
 export default async function FeedPage() {
   const stored = await getStorage().getFeed();
   const usingReal = stored.length > 0;
-  const listings: ScoredListing[] = usingReal
+  const listings: StoredListing[] = usingReal
     ? stored
     : capabilities.showSampleData()
       ? MOCK_LISTINGS
@@ -28,7 +30,18 @@ export default async function FeedPage() {
     <div className="min-h-screen">
       {/* ════════ POSTER HERO (overcast sky) ════════ */}
       <header className="relative overflow-hidden">
-        <SiteNav />
+        <SiteNav right={
+          <div className="flex items-center gap-3">
+            <ETACaseButton />
+            <Link
+              href="/saved"
+              className="eyebrow text-[11px] px-5 py-2.5 transition-colors hover:bg-[#df7d62]"
+              style={{ backgroundColor: '#0e1011', color: '#f0ebe1' }}
+            >
+              The Hold
+            </Link>
+          </div>
+        } />
 
         {/* sky decoration */}
         <Cloud className="pointer-events-none absolute top-16 left-[8%] w-24 drift" />

@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import type { ScoredListing, Stage } from '@/lib/types';
-import { formatCurrency, listingAge } from '@/lib/types';
+import { formatCurrency, listingAge, pullAge } from '@/lib/types';
 import { VerdictBadge } from './verdict-badge';
+import { StarCompass } from './star-compass';
 
 function StageButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -13,6 +14,20 @@ function StageButton({ label, active, onClick }: { label: string; active: boolea
       style={{ color: active ? '#df7d62' : '#8b949b' }}
     >
       {active ? `✓ ${label}` : label}
+    </button>
+  );
+}
+
+function StarButton({ starred, onClick, size = 18 }: { starred: boolean; onClick: () => void; size?: number }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={starred}
+      aria-label={starred ? 'Unstar' : 'Star'}
+      title={starred ? 'Starred' : 'Star this business'}
+      className="-my-1 py-1 transition-transform duration-200 hover:scale-110"
+    >
+      <StarCompass filled={starred} style={{ width: size, height: size }} />
     </button>
   );
 }
@@ -29,10 +44,13 @@ function DataField({ label, value }: { label: string; value: string }) {
 type Props = {
   listing: ScoredListing;
   stage?: Stage;
+  starred?: boolean;
   onStage?: (id: string, stage: Stage) => void;
+  onStar?: (id: string, starred: boolean) => void;
+  condensed?: boolean;
 };
 
-export function ListingCard({ listing, stage = 'new', onStage }: Props) {
+export function ListingCard({ listing, stage = 'new', starred = false, onStage, onStar, condensed = false }: Props) {
   const scored = !!listing.score;
   const verdict = listing.score?.verdict ?? 'DIG_DEEPER';
   const isEdgeCase = verdict === 'EDGE_CASE';
@@ -56,6 +74,36 @@ export function ListingCard({ listing, stage = 'new', onStage }: Props) {
   const summary = scored
     ? listing.score!.summary
     : listing.description?.slice(0, 160) ?? `Newly scraped from ${listing.source}. Awaiting buy-box scoring.`;
+  const keyFigure = isOffMarket
+    ? offMarket ? `${offMarket.weightedTotal}/5` : '—'
+    : formatCurrency(listing.ebitda);
+
+  // ── Condensed (ledger) row — one line per deal, mono figures aligned. ──
+  if (condensed) {
+    return (
+      <div
+        className="group relative flex items-center gap-4 px-5 py-3 transition-transform duration-200 hover:-translate-y-px"
+        style={{ backgroundColor: '#1c2024', border: '1px solid #2b3137' }}
+      >
+        <span className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 transition-transform duration-300 group-hover:scale-x-100" style={{ backgroundColor: '#df7d62' }} />
+        <span className="inline-block h-2 w-2 rotate-45 shrink-0" style={{ backgroundColor: scored ? '#df7d62' : '#8b949b' }} />
+        <Link href={`/listings/${listing.id}`} className="display text-sm leading-none truncate flex-1 min-w-[7rem] transition-colors hover:text-[#df7d62]" style={{ color: '#ece7dd' }}>
+          {listing.title}
+        </Link>
+        <span className="figure text-[11px] hidden sm:block w-28 truncate text-right" style={{ color: '#8b949b' }}>{listing.location ?? '—'}</span>
+        <span className="figure text-xs w-16 text-right" style={{ color: '#ece7dd' }}>{keyFigure}</span>
+        <span className="figure text-[10px] w-24 text-right hidden md:block" style={{ color: '#5a646b' }}>{pullAge(listing.scrapedAt)}</span>
+        {onStar && <StarButton starred={starred} onClick={() => onStar(listing.id, !starred)} size={16} />}
+        {onStage && (
+          <div className="flex items-center gap-2.5 shrink-0">
+            <StageButton label="Researched" active={stage === 'researching'} onClick={() => onStage(listing.id, 'researching')} />
+            <StageButton label="Contacted" active={stage === 'contacted'} onClick={() => onStage(listing.id, 'contacted')} />
+            <StageButton label="Pass" active={stage === 'passed'} onClick={() => onStage(listing.id, 'passed')} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <article
@@ -88,7 +136,9 @@ export function ListingCard({ listing, stage = 'new', onStage }: Props) {
         </div>
 
         {offMarket?.upsideWithoutOwner && (
-          <span className="self-start eyebrow text-[9px] px-2 py-0.5" style={{ backgroundColor: '#df7d62', color: '#0e1011' }}>
+          // Quiet ink-bordered mark (ochre text), not a filled-coral pill — coral is
+          // rationed to the disposition/verdict moment per DESIGN.md.
+          <span className="self-start eyebrow text-[9px] px-2 py-0.5" style={{ color: '#d4a24a', border: '1px solid #2b3137' }}>
             ★ Upside without the owner
           </span>
         )}
@@ -158,13 +208,22 @@ export function ListingCard({ listing, stage = 'new', onStage }: Props) {
             {siteUnverified ? 'site (unverified) ↗' : 'website ↗'}
           </a>
         )}
+        {/* Freshness signal — when the deal was pulled. */}
+        <span className="figure text-[10px]" style={{ color: '#5a646b' }}>{pullAge(listing.scrapedAt)}</span>
         {onStage && (
           <div className="flex items-center gap-3">
-            <StageButton label="Research" active={stage === 'researching'} onClick={() => onStage(listing.id, 'researching')} />
+            <StageButton label="Researched" active={stage === 'researching'} onClick={() => onStage(listing.id, 'researching')} />
             <StageButton label="Contacted" active={stage === 'contacted'} onClick={() => onStage(listing.id, 'contacted')} />
             <StageButton label="Pass" active={stage === 'passed'} onClick={() => onStage(listing.id, 'passed')} />
+            {stage !== 'new' && (
+              // One-click marking persists immediately and lands the deal in The Hold.
+              <Link href="/saved" className="eyebrow text-[10px] transition-colors hover:text-[#df7d62]" style={{ color: '#8b949b' }}>
+                · In the Hold ↗
+              </Link>
+            )}
           </div>
         )}
+        {onStar && <StarButton starred={starred} onClick={() => onStar(listing.id, !starred)} />}
         <Link href={`/listings/${listing.id}`} className="ml-auto eyebrow text-[11px] transition-opacity hover:opacity-60" style={{ color: '#ece7dd' }}>
           Dig Deeper →
         </Link>

@@ -5,6 +5,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { ScoredListing, Score, Research, PipelineStatus, Stage } from '@/lib/types';
 import { HIDDEN_STAGES } from '@/lib/types';
+import { savedDeals } from '@/lib/feed-filter';
 import type { StoredListing } from './index';
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -39,6 +40,7 @@ export async function upsertListings(listings: ScoredListing[]): Promise<number>
       score: existing?.score ?? l.score,
       research: existing?.research ?? l.research,
       stage: existing?.stage ?? 'new',
+      starred: existing?.starred ?? false,
       pipelineStatus: existing?.pipelineStatus ?? l.pipelineStatus,
     };
   }
@@ -101,6 +103,11 @@ export async function getFeed(): Promise<StoredListing[]> {
     .sort((a, b) => (b.scrapedAt > a.scrapedAt ? 1 : -1));
 }
 
+export async function getSaved(): Promise<StoredListing[]> {
+  const db = await read();
+  return savedDeals(Object.values(db).filter((l) => !l.duplicateOf));
+}
+
 export async function getById(id: string): Promise<StoredListing | null> {
   const db = await read();
   const key = keyFor(db, id);
@@ -120,6 +127,14 @@ export async function setStage(id: string, stage: Stage): Promise<void> {
   const key = keyFor(db, id);
   if (!key) return;
   db[key].stage = stage;
+  await write(db);
+}
+
+export async function setStar(id: string, starred: boolean): Promise<void> {
+  const db = await read();
+  const key = keyFor(db, id);
+  if (!key) return;
+  db[key].starred = starred;
   await write(db);
 }
 

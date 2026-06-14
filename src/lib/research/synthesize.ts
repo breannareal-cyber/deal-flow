@@ -23,8 +23,8 @@ export async function researchListing(listing: Listing): Promise<Research> {
   const res = await client.messages.create({
     model: config.anthropic.model,
     max_tokens: 1000,
-    system: `You synthesize web research for an ETA buyer evaluating a water/environmental business. Produce a concise, practitioner-grade brief. Cover: what the business does + likely customer type (municipal/residential/commercial), owner tenure/succession signal, regulatory standing (licenses transferable?), and working-capital indicators. Flag red and green signals. Return ONLY JSON:
-{"summary": "1 paragraph", "ownerInfo": "1-2 sentences on owner/tenure/motivation", "keyRisks": ["3-5 specific risks"]}`,
+    system: `You synthesize web research for an ETA buyer evaluating a water/environmental business. Return ONLY JSON:
+{"summary": "2-3 sentences max: what the business does and who its customers are (municipal/residential/commercial). Be specific — no filler. If web findings are thin, state what is known from the listing alone.", "ownerInfo": "1-2 sentences on owner/tenure/motivation", "keyRisks": ["3-5 specific risks"]}`,
     messages: [
       {
         role: 'user',

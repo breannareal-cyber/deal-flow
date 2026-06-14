@@ -3,11 +3,14 @@ import {
   pgEnum,
   text,
   integer,
+  serial,
   timestamp,
   jsonb,
+  boolean,
   unique,
 } from 'drizzle-orm/pg-core';
 import type { Listing, Score, Research } from '@/lib/types';
+import type { ETACaseData } from '@/lib/eta/types';
 
 // Document-oriented schema. The app's domain types (Listing/Score/Research) are
 // the source of truth — richer than any column set we'd hand-maintain — so each
@@ -57,6 +60,7 @@ export const listings = pgTable('listings', {
   duplicateOf: text('duplicate_of'), // self-ref to listings.id; loose (no FK), matches JSON store
   retryCount: integer('retry_count').notNull().default(0),
   stage: stageEnum('stage').notNull().default('new'), // user disposition through the pipeline
+  starred: boolean('starred').notNull().default(false), // favorite flag, orthogonal to stage
   data: jsonb('data').$type<Listing>().notNull(),
 }, (t) => [
   unique().on(t.source, t.externalId),
@@ -81,3 +85,26 @@ export const research = pgTable('research', {
 }, (t) => [
   unique().on(t.listingId, t.depth),
 ]);
+
+// ETA (Entrepreneurship Through Acquisition) curriculum tables.
+// Pre-built cases stored document-style — only case_number is queryable;
+// all case content lives in jsonb data.
+
+export const etaCases = pgTable('eta_cases', {
+  id: serial('id').primaryKey(),
+  caseNumber: integer('case_number').notNull().unique(),
+  title: text('title').notNull(),
+  industry: text('industry').notNull(),
+  difficulty: integer('difficulty').notNull(), // 1–5
+  source: text('source').notNull().default('curriculum'), // 'curriculum' | 'pipeline'
+  listingId: text('listing_id').references(() => listings.id, { onDelete: 'set null' }),
+  data: jsonb('data').$type<ETACaseData>().notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Single-row progress tracker (id always = 1).
+export const etaProgress = pgTable('eta_progress', {
+  id: integer('id').primaryKey().default(1),
+  currentCase: integer('current_case').notNull().default(1),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
